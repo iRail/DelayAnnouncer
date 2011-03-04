@@ -3,18 +3,19 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::DelayCount;
+package WWW::IRail::DelayAnnouncer::Achievement::TrainDelay;
 
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
+use List::Util qw(max);
 
 # Write nicely
 use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Highscore';
+with 'WWW::IRail::DelayAnnouncer::Achievement';
 
 
 ################################################################################
@@ -38,21 +39,35 @@ with 'WWW::IRail::DelayAnnouncer::Highscore';
 
 =cut
 
-sub calculate_score {
-	my ($self, $liveboard) = @_;
+sub init_storage {
+	my ($self) = @_;
 	
-	my $count = scalar
-		grep { $_->{delay} }
-		@{$liveboard->departures()};
-	DEBUG "Delay count: $count";
-	return $count;
-};
-
-sub message {
-	my ($self, $station, $score) = @_;
-	
-	return "$station just increased its highscore of delayed trains to $score trains";
+	$self->storage()->{delay} = 0;
 }
+
+sub messages {
+	my ($self, $database) = @_;
+	
+	# Calculate delay
+	my $delay = max
+		map { $_->{delay} }
+		@{$database->current_liveboard()->departures()};
+	$delay /= 60;
+	DEBUG "Maximum delay: $delay";
+	
+	# Check
+	DEBUG "Stored delay: " . $self->storage()->{delay};
+	if ($delay > ($self->storage()->{delay} + 30)) {
+		DEBUG "Current delay is 30 minutes higher, triggering message";
+		$self->storage()->{delay} += 30;
+		
+		return [ 'Achievement unlocked: delay a train '
+			. $self->storage()->{delay}
+			. ' minutes' ];
+	}	
+	return [];
+}
+
 
 42;
 

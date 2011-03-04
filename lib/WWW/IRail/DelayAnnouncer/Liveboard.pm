@@ -88,7 +88,8 @@ sub update {
 	my $response = $self->ua()->get($self->url());
 	LOGDIE "Could not fetch liveboard data"
 		unless($response->is_success);
-		
+	
+	# TODO: dit mag niet crashen, gwn niet verer processen dan en aan dlay announcer laten weten
 	my $data = $self->json()->decode($response->decoded_content);
 	
 	$self->{timestamp} = $data->{timestamp};

@@ -125,8 +125,9 @@ sub run {
 		foreach my $plugin (@{$self->achievements()}) {
 			DEBUG "Processing " . ref($plugin);
 			$self->database()->init_achievement($plugin);
-			if ($plugin->check($self->database())) {
-				push @messages, $plugin->message();
+			my $plugin_messages = $plugin->messages($self->database());
+			if (@$plugin_messages) {
+				push @messages, @$plugin_messages;
 				$self->database()->set_achievement_storage($plugin->id(), $plugin->storage());
 			}
 		}

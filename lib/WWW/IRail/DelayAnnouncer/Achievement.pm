@@ -50,9 +50,7 @@ sub id {
 
 requires 'init_storage';
 
-requires 'check';
-
-requires 'message';
+requires 'messages';
 
 42;
 

@@ -19,7 +19,8 @@ my $build = Module::Build->new (
         'File::Find'        => 0,
         'Clone'             => 0,
         'Log::Log4perl'     => 0,
-        'DBIx::Log4perl'    => 0
+        'DBIx::Log4perl'    => 0,
+        'List::Util'				=> 0
     },
     recommends => {
     }

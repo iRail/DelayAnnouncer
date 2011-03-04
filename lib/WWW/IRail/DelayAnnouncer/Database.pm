@@ -83,7 +83,8 @@ CREATE TABLE liveboard (
 	station TEXT,
 	vehicle TEXT,
 	delay INTEGER,
-	platform INTEGER	
+	platform INTEGER,
+	time INTEGER
 )	
 END
 	);
@@ -129,8 +130,8 @@ sub add_liveboard {
 	$self->{current_liveboard} = $liveboard->clone_data();
 	
 	my $sth = $self->dbd()->prepare(<<END
-INSERT INTO liveboard (timestamp, station, vehicle, delay, platform)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO liveboard (timestamp, station, vehicle, delay, platform, time)
+VALUES (?, ?, ?, ?, ?, ?)
 END
 	);
 	
@@ -139,6 +140,7 @@ END
 	$sth->bind_param_array(3, [map { $_->{vehicle} } @{$liveboard->departures()}]);
 	$sth->bind_param_array(4, [map { $_->{delay} } @{$liveboard->departures()}]);
 	$sth->bind_param_array(5, [map { $_->{platform} } @{$liveboard->departures()}]);
+	$sth->bind_param_array(6, [map { $_->{time} } @{$liveboard->departures()}]);
 	
 	$sth->execute_array( {} );
 }
@@ -184,8 +186,10 @@ END
 sub init_achievement {
 	my ($self, $achievement) = @_;
 	
+	DEBUG "Checking " . $achievement->id();
+	
 	my $storage = $self->get_achievement_storage($achievement->id());
-	if ($storage) {
+	if (keys %$storage) {
 		$achievement->storage($storage);
 	} else {
 		$achievement->init_storage();
@@ -207,13 +211,9 @@ END
 	$sth->execute();
 	
 	my $result = $sth->fetchall_arrayref;
-	if ($result) {
-		my %storage = map { $_->[0] => $_->[1] }
-			@{$result};
-		return \%storage;
-	} else {
-		return undef;
-	}
+	my %storage = map { $_->[0] => $_->[1] }
+		@{$result};
+	return \%storage;
 }
 
 sub set_achievement_storage {
