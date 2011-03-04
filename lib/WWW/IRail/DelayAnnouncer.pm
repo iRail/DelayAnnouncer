@@ -10,6 +10,7 @@ use Moose;
 use File::Find;
 use WWW::IRail::DelayAnnouncer::Liveboard;
 use WWW::IRail::DelayAnnouncer::Database;
+use Log::Log4perl qw(:easy);
 
 # Write nicely
 use strict;
@@ -32,7 +33,7 @@ has 'station' => (
 	required	=> 1
 );
 
-has 'notifiers' => (
+has 'listeners' => (
 	is		=> 'rw',
 	isa		=> 'ArrayRef[CodeRef]',
 	default		=> sub { [] }
@@ -92,35 +93,51 @@ sub BUILD {
 	$self->{liveboard} = new WWW::IRail::DelayAnnouncer::Liveboard(station => $self->station());
 }
 
-sub add_notifier {
-	my ($self, $notifier) = @_;
+sub add_listener {
+	my ($self, $listener) = @_;
 	
-	push @{$self->notifiers()}, $notifier;
+	push @{$self->listeners()}, $listener;
 }
 
 sub run {
 	my ($self) = @_;
 	
-	print "Entering main loop...\n";
+	DEBUG "Entering main loop";
 	while (1) {
+		DEBUG "Updating liveboard";
 		$self->liveboard()->update();
+		$self->database()->add_liveboard($self->liveboard());
+		my @messages;
 		
 		# Check highscores
+		DEBUG "Checking highscores";
 		foreach my $plugin (@{$self->highscores()}) {
+			DEBUG "Processing " . ref($plugin);
 			my $score = $plugin->calculate_score($self->liveboard());
 			if ($score > $self->database()->get_highscore($plugin->id())) {
-				print $plugin->message($self->station(), $score);
+				push @messages, $plugin->message($self->station(), $score);
 				$self->database()->set_highscore($plugin->id(), $score);
 			}
 		}
 		
 		# Check achievements
-		$self->database()->add_liveboard($self->liveboard());
+		DEBUG "Checking achievements";
 		foreach my $plugin (@{$self->achievements()}) {
+			DEBUG "Processing " . ref($plugin);
 			$self->database()->init_achievement($plugin);
 			if ($plugin->check($self->database())) {
-				print $plugin->message();
+				push @messages, $plugin->message();
 				$self->database()->set_achievement_storage($plugin->id(), $plugin->storage());
+			}
+		}
+		
+		# Print messages
+		if (scalar @messages > 0) {
+			DEBUG "Print messages";
+			foreach my $message (@messages) {
+				foreach my $listener (@{$self->{listeners}}) {
+					&$listener($message);
+				}
 			}
 		}
 		
@@ -153,7 +170,8 @@ sub _discover {
 			last;
 		}
 	}
-	die("no inclusion directory matched plugin structure") unless defined $root;
+	LOGDIE "no inclusion directory matched plugin structure"
+		unless defined $root;
 	
 	# Scan for Perl-modules
 	my %plugins;
@@ -174,7 +192,7 @@ sub _instantiate {
 	
 	# Discover all plugins
 	my %plugins = _discover($base)
-		or die("Error discovering plugins: $!");
+		or LOGDIE "Error discovering plugins: $!";
 	
 	# Process all plugins
 	my @plugins_usable;
@@ -185,13 +203,13 @@ sub _instantiate {
 		my $status = do $file;
 		if (!$status) {
 			if ($@) {
-				warn("Error loading plugin $package: $@");
+				WARN "Error loading plugin $package: $@";
 			}
 			elsif ($!) {
-				warn("Error loading plugin $package: $!");
+				WARN "Error loading plugin $package: $!";
 			}
 			else {
-				warn("Error loading plugin $package: unknown failure");
+				WARN "Error loading plugin $package: unknown failure";
 			}
 			next;
 		}

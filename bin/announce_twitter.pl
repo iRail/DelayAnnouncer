@@ -52,6 +52,14 @@ use Getopt::Long;
 use Pod::Usage;
 use WWW::IRail::DelayAnnouncer;
 use WWW::IRail::DelayAnnouncer::Database;
+use Log::Log4perl qw(:easy);
+
+# Initial logging
+Log::Log4perl->easy_init($INFO);
+
+# Signal handling
+$SIG{INT} = "quit";
+$SIG{TERM} = "quit";
 
 
 ###############################################################################
@@ -61,6 +69,9 @@ use WWW::IRail::DelayAnnouncer::Database;
 #
 # Load command-line parameters
 #
+
+INFO "Initialising";
+DEBUG "Loading command-line parameters";
 
 # Register variables
 my %params;
@@ -89,22 +100,60 @@ if ($params{"man"}) {
 # Load configuration
 #
 
+DEBUG "Loading configuration";
+
 # Read config
 my $config = Config::Tiny->read($params{config})
-    or die("Could not read the configuration file at $params{config}: $!");
+    or LOGDIE "Could not read the configuration file at $params{config}: $!";
 
 # Create some section objects
 my $config_root = $config->{_};
-my $config_twitter = $config->{twitter};
+my $config_twitter = $config->{twitter}
+    or LOGDIE "Twitter configuration section missing";
+my $config_log = $config->{log}
+    or LOGDIE "Log configuration section missing";
 
 
 #
-# Setup twitter
+# Load logging
 #
+
+DEBUG "Loading logging";
+
+LOGDIE "Please specify a logging type"
+    unless (defined $config_log->{type});
+if ($config_log->{type} eq "easy") {
+    LOGDIE "Easy logging type requires a logging level"
+        unless (defined $config_log->{level});
+    my %levels = (
+        trace   => $TRACE,
+        debug   => $DEBUG,
+        info    => $INFO,
+        warn    => $WARN,
+        error   => $ERROR,
+        fatal   => $FATAL
+    );
+    LOGDIE "Invalid logging level"
+        unless defined($levels{$config_log->{level}});
+    Log::Log4perl->easy_init($levels{$config_log->{level}});
+} elsif ($config_log->{type} eq "enhanced") {
+    LOGDIE "Easy logging type requires a log configuration file"
+        unless (defined $config_log->{file});
+    Log::Log4perl::init($config_log->{file});    
+} else {
+    LOGDIE "Invalid logging type";
+}
+
+
+#
+# Load Twitter
+#
+
+DEBUG "Loading Twitter";
 
 # Check consumer key
 if (!defined $config_twitter || grep { !defined $config_twitter->{$_} } qw/consumer_key consumer_secret/) {
-    die("Twitter consumer configuration missing, please register an application at <https://dev.twitter.com/apps/new>");
+    LOGDIE "Twitter consumer configuration missing, please register an application at <https://dev.twitter.com/apps/new>";
 }
 
 my $nt = Net::Twitter->new(
@@ -115,7 +164,7 @@ my $nt = Net::Twitter->new(
 
 # Check access key
 if (grep { !defined $config_twitter->{$_} } qw/access_token access_token_secret/) {
-    print "Authorize this app at ", $nt->get_authorization_url, " and enter the PIN#\n";
+    INFO "Authorize this app at ", $nt->get_authorization_url, " and enter the PIN number";
 
     my $pin = <STDIN>; # wait for input
     chomp $pin;
@@ -131,7 +180,7 @@ $nt->access_token($config_twitter->{access_token});
 $nt->access_token_secret($config_twitter->{access_token_secret});
 
 unless ($nt->authorized) {
-    die("Application authorization failed, please verify the keys and secrets");
+    LOGDIE "Application authorization failed, please verify the keys and secrets";
 }
 
 
@@ -139,30 +188,51 @@ unless ($nt->authorized) {
 # Load database
 #
 
-die("Please define a database to use")
+DEBUG "Loading database";
+
+LOGDIE "Please define a database to use"
     unless(defined $config_root->{database});
 
 my $database = new WWW::IRail::DelayAnnouncer::Database(uri => $config_root->{database});
 
 if ($params{init}) {
-    print "Creating database...\n";
+    DEBUG "Creating database";
     $database->create();
 }
 
 
 #
-# Start announcer
+# Load announcer
 #
 
-die("Please define a station to use")
+DEBUG "Loading announcer";
+
+LOGDIE "Please define a station to use"
     unless(defined $config_root->{station});
 
 my $announcer = new WWW::IRail::DelayAnnouncer(station => $config_root->{station}, database => $database);
-$announcer->add_notifier(sub {
+$announcer->add_listener(sub {
     my ($message) = @_;
-    print "Tweeting: $message\n";
+    INFO "Tweeting: $message";
 });
+
+INFO "Starting announcer";
 $announcer->run();
+
+exit(0);
+
+
+###############################################################################
+# Routines
+#
+
+sub quit {
+    INFO "Closing down";
+    $database->close();
+    
+    INFO "Bye...";
+    exit(0);
+}
 
 
 ###############################################################################

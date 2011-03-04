@@ -7,6 +7,7 @@ package WWW::IRail::DelayAnnouncer::Achievement::DelayedTrainsPercentage;
 
 # Packages
 use Moose;
+use Log::Log4perl qw(:easy);
 
 # Write nicely
 use strict;
@@ -47,19 +48,24 @@ sub check {
 	my ($self, $database) = @_;
 	
 	# At least 5 trains
-	return 0
-		unless(scalar @{$database->current_liveboard()->departures()} > 5);
+	my $total = scalar @{$database->current_liveboard()->departures()};
+	DEBUG "Found $total trains";
+	if ($total < 5) {
+		DEBUG "Bailing out, need at least 5 trains";
+		return 0;
+	}
 	
 	# Calculate percentage
 	my $delayed = scalar
 		grep { $_->{delay} > 0 }
-		@{$database->current_liveboard()->departures()};
-	my $total = scalar
-		@{$database->current_liveboard()->departures()};		
+		@{$database->current_liveboard()->departures()};	
 	my $percentage = int (100 * $delayed / $total);
+	DEBUG "Found $delayed delayed trains (or $percentage%)";
 	
 	# Check
+	DEBUG "Stored percentage: " . $self->storage()->{percentage};
 	if ($percentage > ($self->storage()->{percentage} + 25)) {
+		DEBUG "Current amount is 25% higher, triggering message";
 		$self->storage()->{percentage} += 25;
 		return 1;
 	}	

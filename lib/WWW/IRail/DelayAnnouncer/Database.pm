@@ -7,7 +7,8 @@ package WWW::IRail::DelayAnnouncer::Database;
 
 # Packages
 use Moose;
-use DBI;
+use Log::Log4perl qw(:easy);
+use DBIx::Log4perl;
 
 # Write nicely
 use strict;
@@ -40,7 +41,7 @@ has 'dbd' => (
 sub _build_dbd {
 	my ($self) = @_;
 	
-	my $dbd = DBI->connect($self->uri(), '', '', {
+	my $dbd = DBIx::Log4perl->connect($self->uri(), '', '', {
 		RaiseError	=> 1,
 		PrintError	=> 0,
 		AutoCommit	=> 1
@@ -113,6 +114,14 @@ END
 	$sth->execute();
 }
 
+sub close {
+	my ($self) = @_;
+	
+	DEBUG "Disconnecting database";
+	$self->dbd()->disconnect()
+		or WARN "Could not disconnect database: $DBI::errstr";
+}
+
 sub add_liveboard {
 	my ($self, $liveboard) = @_;
 	
@@ -129,7 +138,7 @@ END
 	$sth->bind_param_array(2, [map { $_->{station} } @{$liveboard->departures()}]);
 	$sth->bind_param_array(3, [map { $_->{vehicle} } @{$liveboard->departures()}]);
 	$sth->bind_param_array(4, [map { $_->{delay} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(5, [map { $_->{playform} } @{$liveboard->departures()}]);
+	$sth->bind_param_array(5, [map { $_->{platform} } @{$liveboard->departures()}]);
 	
 	$sth->execute_array( {} );
 }

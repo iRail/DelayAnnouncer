@@ -17,7 +17,9 @@ my $build = Module::Build->new (
         'URI:Escape'        => 0,
         'DBI'               => 0,
         'File::Find'        => 0,
-        'Clone'             => 0
+        'Clone'             => 0,
+        'Log::Log4perl'     => 0,
+        'DBIx::Log4perl'    => 0
     },
     recommends => {
     }

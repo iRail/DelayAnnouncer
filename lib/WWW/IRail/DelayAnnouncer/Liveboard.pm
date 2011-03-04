@@ -11,6 +11,7 @@ use JSON;
 use Clone ('clone');
 use LWP::UserAgent;
 use URI::Escape ('uri_escape');
+use Log::Log4perl qw(:easy);
 
 # Write nicely
 use strict;
@@ -85,7 +86,7 @@ sub update {
 	my ($self) = @_;
 	
 	my $response = $self->ua()->get($self->url());
-	die("Could not fetch liveboard data")
+	LOGDIE "Could not fetch liveboard data"
 		unless($response->is_success);
 		
 	my $data = $self->json()->decode($response->decoded_content);
@@ -95,6 +96,12 @@ sub update {
 		$self->{departures} = [ $data->{departures}{departure} ];	# WORKAROUND
 	} else {								# WORKAROUND
 		$self->{departures} = $data->{departures}{departure};
+	}
+	
+	foreach my $departure (@{$self->{departures}}) {
+		if ($departure->{platform} eq "NA") {
+			$departure->{platform} = undef;
+		}
 	}
 }
 

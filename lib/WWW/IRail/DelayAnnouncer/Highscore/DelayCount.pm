@@ -7,6 +7,7 @@ package WWW::IRail::DelayAnnouncer::Highscore::DelayCount;
 
 # Packages
 use Moose;
+use Log::Log4perl qw(:easy);
 
 # Write nicely
 use strict;
@@ -40,9 +41,11 @@ with 'WWW::IRail::DelayAnnouncer::Highscore';
 sub calculate_score {
 	my ($self, $liveboard) = @_;
 	
-	return scalar
+	my $count = scalar
 		grep { $_->{delay} }
 		@{$liveboard->departures()};
+	DEBUG "Delay count: $count";
+	return $count;
 };
 
 sub message {
