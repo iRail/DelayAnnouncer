@@ -122,6 +122,7 @@ DEBUG "Loading logging";
 
 LOGDIE "Please specify a logging type"
     unless (defined $config_log->{type});
+
 if ($config_log->{type} eq "easy") {
     LOGDIE "Easy logging type requires a logging level"
         unless (defined $config_log->{level});
@@ -143,6 +144,22 @@ if ($config_log->{type} eq "easy") {
 } else {
     LOGDIE "Invalid logging type";
 }
+
+# Handle regular warn()
+$SIG{__WARN__} = sub {
+    local $Log::Log4perl::caller_depth =
+        $Log::Log4perl::caller_depth + 1;
+    WARN @_;
+};
+
+# Handle regular die()
+$SIG{__DIE__} = sub {
+    # Don't trap eval
+    return if($^S);
+    
+    $Log::Log4perl::caller_depth++;
+    LOGDIE @_;
+};
 
 
 #
