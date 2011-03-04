@@ -73,8 +73,7 @@ sub messages {
 		if ($stats[0] > 3) { # We need at-least 3 departures
 			if ($stats[0] == $stats[1] && $stats[1] > $previous) {
 				DEBUG "Pushing message";
-				push @messages, "Achievement unlocked: "
-					. "delay all "
+				push @messages, "delay all "
 					. $stats[1]
 					. " trains to "
 					. $terminus;

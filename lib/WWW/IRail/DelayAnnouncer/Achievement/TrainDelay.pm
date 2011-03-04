@@ -61,7 +61,7 @@ sub messages {
 		DEBUG "Current delay is 30 minutes higher, triggering message";
 		$self->storage()->{delay} += 30;
 		
-		return [ 'Achievement unlocked: delay a train '
+		return [ 'delay a train '
 			. $self->storage()->{delay}
 			. ' minutes' ];
 	}	

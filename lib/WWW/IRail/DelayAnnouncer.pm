@@ -137,7 +137,7 @@ sub run {
 			DEBUG "Print messages";
 			foreach my $message (@messages) {
 				foreach my $listener (@{$self->{listeners}}) {
-					&$listener($message);
+					&$listener("Achievement unlocked: " . $message);
 				}
 			}
 		}

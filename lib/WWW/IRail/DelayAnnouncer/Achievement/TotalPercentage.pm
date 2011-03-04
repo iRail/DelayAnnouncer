@@ -68,7 +68,7 @@ sub messages {
 		DEBUG "Current amount is 25% higher, triggering message";
 		$self->storage()->{percentage} += 25;
 		
-		return [ 'Achievement unlocked: delay at least '
+		return [ 'delay at least '
 			. $self->storage()->{percentage}
 			. '% of the trains' ];
 	}	

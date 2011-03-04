@@ -72,7 +72,7 @@ sub messages {
 		DEBUG "Current amount is 25% higher, triggering message";
 		$self->storage()->{window} += 5;
 		
-		return [ 'Achievement unlocked: delay all trains within the next '
+		return [ 'delay all trains within the next '
 			. $self->storage()->{window}
 			. ' minutes' ];
 	}	
