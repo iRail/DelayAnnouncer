@@ -162,7 +162,7 @@ END
 	if ($result) {
 		return @$result[0];
 	} else {
-		return -1;
+		return 0;
 	}	
 }
 
