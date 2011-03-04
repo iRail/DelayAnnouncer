@@ -25,6 +25,8 @@ my $build = Module::Build->new (
         'Lingua::EN::Inflect'	=> 0
     },
     recommends => {
+        'Net::Twitter'				=> 0,
+        'DBD::SQLite'					=> 0
     }
 );
 $build->create_build_script;

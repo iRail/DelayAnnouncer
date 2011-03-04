@@ -42,7 +42,7 @@ has 'listeners' => (
 has 'delay' => (
 	is		=> 'ro',
 	isa		=> 'Int',
-	default		=> 10
+	default		=> 60
 );
 
 has 'liveboard' => (
