@@ -52,6 +52,18 @@ requires 'init_storage';
 
 requires 'messages';
 
+around 'messages' => sub {
+	my $orig = shift;
+	my $self = shift;
+	
+	my $messages = $self->$orig(@_);
+	foreach my $message (@$messages) {
+		$message = "Achievement unlocked: $message.";
+	}
+	
+	return $messages;
+};
+
 42;
 
 __END__

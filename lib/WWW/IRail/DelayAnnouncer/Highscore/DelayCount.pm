@@ -51,7 +51,7 @@ sub calculate_score {
 sub message {
 	my ($self, $station, $score) = @_;
 	
-	return "$station just increased its highscore of delayed trains to $score trains";
+	return "$station just delayed up to $score trains";
 }
 
 42;

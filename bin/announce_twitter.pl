@@ -208,12 +208,21 @@ if ($params{init}) {
 DEBUG "Loading announcer";
 
 LOGDIE "Please define a station to use"
-    unless(defined $config_root->{station});
+    unless (defined $config_root->{station});
+
+LOGDIE "Please provide station coordinates"
+    unless (defined $config_root->{longitude} && defined $config_root->{latitude});
 
 my $announcer = new WWW::IRail::DelayAnnouncer(station => $config_root->{station}, database => $database);
 $announcer->add_listener(sub {
     my ($message) = @_;
     INFO "Tweeting: $message";
+    $nt->update({
+        status                  => $message,
+        long                    => $config_root->{longitude},
+        lat                     => $config_root->{latitude},
+        display_coordinates     => 1
+    });
 });
 
 INFO "Starting announcer";

@@ -46,6 +46,16 @@ requires 'calculate_score';
 
 requires 'message';
 
+around 'message' => sub {
+	my $orig = shift;
+	my $self = shift;
+	
+	my $message = $self->$orig(@_);
+	$message = "New highscore: $message!";
+	
+	return $message;
+};
+
 42;
 
 __END__

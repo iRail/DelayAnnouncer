@@ -5,11 +5,11 @@ $station just increased his daily total to over $min minutes on The Delay Game!
 $station just increased his weekly total to over $min minutes on The Delay Game!
 $station just increased his monthly total to over $min minutes on The Delay Game!
 
-Achievement unlocked: have a delay on at least 25/50/75% of the trains [ liveboard contains at least 5 trains ]
-Achievement unlocked: delay a train with more then 30/60/90/120 minutes
-Achievement unlocked: have no delays between 7 and 11 AM on a weekday [ liveboard contains at least 5 trains ]
-Achievement unlocked: have no delays between 3 and 7 PM on a weekday [ liveboard contains at least 5 trains ]
-Achievement unlocked: delay all trains to $terminus [ at least 3 trains to $terminus ]
-Achievement unlocked: delay all trains on track $track [ at least 3 trains on track $track ]
-Achievement unlocked: delay all trains within the next 5/10/15 minutes [ at least 5 trains within that window ]
-Achievement unlocked: have 50/100/150/200 trains without delay to $terminus
++	TotalPercentage					Achievement unlocked: have a delay on at least 25/50/75% of the trains [ liveboard contains at least 5 trains ]
++	Delay										Achievement unlocked: delay a train with more then 30/60/90/120 minutes
+	MorningDelay						Achievement unlocked: have no delays between 7 and 11 AM on a weekday [ liveboard contains at least 5 trains ]
+	EveningDelay						Achievement unlocked: have no delays between 3 and 7 PM on a weekday [ liveboard contains at least 5 trains ]
++	Terminus								Achievement unlocked: delay all trains to $terminus [ at least 3 trains to $terminus ]
++	Track										Achievement unlocked: delay all trains on platfor $platform [ at least 3 trains on platform $platform ]
++	Window									Achievement unlocked: delay all trains within the next 5/10/15 minutes [ at least 5 trains within that window ]
+													Achievement unlocked: have 50/100/150/200 trains without delay to $terminus
