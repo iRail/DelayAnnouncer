@@ -8,6 +8,7 @@ package WWW::IRail::DelayAnnouncer::Achievement::Platform;
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
+use Lingua::EN::Inflect qw/:ALL/;
 
 # Write nicely
 use strict;
@@ -75,8 +76,8 @@ sub messages {
 			if ($stats[0] == $stats[1] && $stats[1] > $previous) {
 				DEBUG "Pushing message";
 				push @messages, 'delay all '
-					. $stats[1]
-					. ' trains on platform'
+					. NO("train", $stats[1])
+					. ' on platform'
 					. $platform;
 				$self->storage()->{$platform} = $stats[1];
 			}

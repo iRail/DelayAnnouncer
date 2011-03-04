@@ -53,8 +53,7 @@ sub message {
 	my ($self, $station, $score) = @_;
 	
 	return "$station just delayed up to "
-		. $score
-		. NO(" trains", $score);
+		. NO("train", $score);
 }
 
 42;

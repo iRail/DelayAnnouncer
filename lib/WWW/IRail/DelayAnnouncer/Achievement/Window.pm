@@ -8,6 +8,7 @@ package WWW::IRail::DelayAnnouncer::Achievement::Window;
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
+use Lingua::EN::Inflect qw/:ALL/;
 
 # Write nicely
 use strict;
@@ -73,8 +74,7 @@ sub messages {
 		$self->storage()->{window} += 5;
 		
 		return [ 'delay all trains within the next '
-			. $self->storage()->{window}
-			. ' minutes' ];
+			. NO("minutes", $self->storage()->{window}) ];
 	}	
 	return []
 }

@@ -9,6 +9,7 @@ package WWW::IRail::DelayAnnouncer::Achievement::TrainDelay;
 use Moose;
 use Log::Log4perl qw(:easy);
 use List::Util qw(max);
+use Lingua::EN::Inflect qw/:ALL/;
 
 # Write nicely
 use strict;
@@ -62,8 +63,7 @@ sub messages {
 		$self->storage()->{delay} += 30;
 		
 		return [ 'delay a train '
-			. $self->storage()->{delay}
-			. ' minutes' ];
+			. NO("minute", $self->storage()->{delay}) ];
 	}	
 	return [];
 }
