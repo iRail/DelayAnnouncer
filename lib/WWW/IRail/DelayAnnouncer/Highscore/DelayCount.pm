@@ -8,6 +8,7 @@ package WWW::IRail::DelayAnnouncer::Highscore::DelayCount;
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
+use Lingua::EN::Inflect qw/:ALL/;
 
 # Write nicely
 use strict;
@@ -51,7 +52,9 @@ sub calculate_score {
 sub message {
 	my ($self, $station, $score) = @_;
 	
-	return "$station just delayed up to $score trains";
+	return "$station just delayed up to "
+		. $score
+		. NO(" trains", $score);
 }
 
 42;
