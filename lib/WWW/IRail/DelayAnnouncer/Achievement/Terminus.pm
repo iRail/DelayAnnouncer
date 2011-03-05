@@ -71,7 +71,7 @@ sub messages {
 			. " delayed, previous limit was "
 			. $previous
 			. ")";
-		if ($stats[0] > 3) { # We need at-least 3 departures
+		if ($stats[0] >= 3) { # We need at-least 3 departures
 			if ($stats[0] == $stats[1] && $stats[1] > $previous) {
 				DEBUG "Pushing message";
 				push @messages, "delay all "
