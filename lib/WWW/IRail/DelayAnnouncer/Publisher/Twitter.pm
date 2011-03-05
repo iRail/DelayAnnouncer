@@ -107,13 +107,12 @@ sub BUILD {
 sub publish {
 	my ($self, $message) = @_;
 	
-	INFO "Twitter publish: " . $message;
-	#$self->twitter()->update({
-	#	status                  => $message,
-	#	long                    => $self->longitude(),
-	#	lat                     => $self->latitude(),
-	#	display_coordinates     => 1
-	#});
+	$self->twitter()->update({
+		status                  => $message,
+		long                    => $self->longitude(),
+		lat                     => $self->latitude(),
+		display_coordinates     => 1
+	});
 }
 
 42;
