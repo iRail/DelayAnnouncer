@@ -63,7 +63,8 @@ sub messages {
 		$self->storage()->{delay} += 10;
 		
 		return [ 'delay a train '
-			. NO("minute", $self->storage()->{delay}) ];
+			. NO("minute", $self->storage()->{delay})
+			. ' or more' ];
 	}	
 	return [];
 }
