@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 #
-# iRail delay announcer - Twitter interface
+# iRail delay announcer
 #
 # Copyright (c) 2011 Tim Besard
 #
@@ -47,11 +47,11 @@ use warnings;
 
 # Packages
 use Config::Tiny;
-use Net::Twitter;
 use Getopt::Long;
 use Pod::Usage;
 use WWW::IRail::DelayAnnouncer;
 use WWW::IRail::DelayAnnouncer::Database;
+use WWW::IRail::DelayAnnouncer::Auxiliary qw/discover instantiate/;
 use Log::Log4perl qw(:easy);
 
 # Initial logging
@@ -75,7 +75,7 @@ DEBUG "Loading command-line parameters";
 
 # Register variables
 my %params;
-$params{config} = "twitter.ini";
+$params{config} = "announcer.ini";
 
 # Load
 GetOptions(
@@ -107,11 +107,11 @@ my $config = Config::Tiny->read($params{config})
     or LOGDIE "Could not read the configuration file at $params{config}: $!";
 
 # Create some section objects
-my $config_root = $config->{_};
-my $config_twitter = $config->{twitter}
-    or LOGDIE "Twitter configuration section missing";
-my $config_log = $config->{log}
+my $config_announcer = delete $config->{announcer};
+my $config_log = delete $config->{log}
     or LOGDIE "Log configuration section missing";
+my $config_database = delete $config->{database}
+    or LOGDIE "Database configuration section missing";
 
 
 #
@@ -120,9 +120,11 @@ my $config_log = $config->{log}
 
 DEBUG "Loading logging";
 
+# Check configuration
 LOGDIE "Please specify a logging type"
     unless (defined $config_log->{type});
 
+# Configure Log4perl
 if ($config_log->{type} eq "easy") {
     LOGDIE "Easy logging type requires a logging level"
         unless (defined $config_log->{level});
@@ -163,54 +165,17 @@ $SIG{__DIE__} = sub {
 
 
 #
-# Load Twitter
-#
-
-DEBUG "Loading Twitter";
-
-# Check consumer key
-if (!defined $config_twitter || grep { !defined $config_twitter->{$_} } qw/consumer_key consumer_secret/) {
-    LOGDIE "Twitter consumer configuration missing, please register an application at <https://dev.twitter.com/apps/new>";
-}
-
-my $nt = Net::Twitter->new(
-    traits              => [qw/API::REST OAuth/],
-    consumer_key        => $config_twitter->{consumer_key},
-    consumer_secret     => $config_twitter->{consumer_secret}
-);
-
-# Check access key
-if (grep { !defined $config_twitter->{$_} } qw/access_token access_token_secret/) {
-    INFO "Authorize this app at ", $nt->get_authorization_url, " and enter the PIN number";
-
-    my $pin = <STDIN>; # wait for input
-    chomp $pin;
-
-    my ($access_token, $access_token_secret, $user_id, $screen_name) = $nt->request_access_token(verifier => $pin);
-    
-    $config_twitter->{access_token} = $access_token;
-    $config_twitter->{access_token_secret} = $access_token_secret;
-    $config->write($params{config});
-}
-
-$nt->access_token($config_twitter->{access_token});
-$nt->access_token_secret($config_twitter->{access_token_secret});
-
-unless ($nt->authorized) {
-    LOGDIE "Application authorization failed, please verify the keys and secrets";
-}
-
-
-#
 # Load database
 #
 
 DEBUG "Loading database";
 
-LOGDIE "Please define a database to use"
-    unless(defined $config_root->{database});
+# Check configuration
+LOGDIE "Please define a DBD URI to use"
+    unless(defined $config_database->{uri});
 
-my $database = new WWW::IRail::DelayAnnouncer::Database(uri => $config_root->{database});
+# Configure database
+my $database = new WWW::IRail::DelayAnnouncer::Database(%$config_database);
 
 if ($params{init}) {
     DEBUG "Creating database";
@@ -219,29 +184,58 @@ if ($params{init}) {
 
 
 #
+# Load publishers
+#
+
+DEBUG "Loading publishers";
+
+# Discover the available publishers
+my %publisher_packages = discover('WWW::IRail::DelayAnnouncer::Publisher');
+
+# Load configuration arguments
+my %publisher_config;
+foreach my $package (keys %publisher_packages) {
+    my @parts = split(/::/, $package);
+    my $config_name = lc($parts[-1]);
+    
+    if (defined $config->{$config_name}) {
+        my $config_publisher = delete $config->{$config_name};
+        if ($config_publisher->{enabled}) {
+            DEBUG "Marking $config_name publisher to load";
+            $publisher_config{$package} = $config_publisher;
+        } else {
+            DEBUG "Skipping $config_name publisher, due to not enabled";
+            delete $publisher_packages{$package};
+        }
+    } else {
+        WARN "Missing configuration for $config_name publisher";
+        delete $publisher_packages{$package};
+    }
+}
+
+# Instantiate publishers
+my $publishers = instantiate(\%publisher_packages, \%publisher_config);
+
+
+#
 # Load announcer
 #
 
 DEBUG "Loading announcer";
 
+# Check configuration
 LOGDIE "Please define a station to use"
-    unless (defined $config_root->{station});
+    unless (defined $config_announcer->{station});
 
-LOGDIE "Please provide station coordinates"
-    unless (defined $config_root->{longitude} && defined $config_root->{latitude});
+# Configure announcer
+my $announcer = new WWW::IRail::DelayAnnouncer(%{$config_announcer}, database => $database);
+foreach my $publisher (@$publishers) {
+    my @parts = split(/::/, ref($publisher));
+    INFO "Registering " . lc($parts[-1]) . " publisher";
+    $announcer->add_publisher($publisher);
+}
 
-my $announcer = new WWW::IRail::DelayAnnouncer(station => $config_root->{station}, database => $database);
-$announcer->add_listener(sub {
-    my ($message) = @_;
-    INFO "Tweeting: $message";
-    $nt->update({
-        status                  => $message,
-        long                    => $config_root->{longitude},
-        lat                     => $config_root->{latitude},
-        display_coordinates     => 1
-    });
-});
-
+# Start announcer
 INFO "Starting announcer";
 $announcer->run();
 

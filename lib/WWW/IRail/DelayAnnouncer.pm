@@ -10,6 +10,7 @@ use Moose;
 use File::Find;
 use WWW::IRail::DelayAnnouncer::Liveboard;
 use WWW::IRail::DelayAnnouncer::Database;
+use WWW::IRail::DelayAnnouncer::Auxiliary qw/instantiate_easy/;
 use Log::Log4perl qw(:easy);
 
 # Write nicely
@@ -33,9 +34,9 @@ has 'station' => (
 	required	=> 1
 );
 
-has 'listeners' => (
+has 'publishers' => (
 	is		=> 'rw',
-	isa		=> 'ArrayRef[CodeRef]',
+	isa		=> 'ArrayRef',
 	default		=> sub { [] }
 );
 
@@ -63,7 +64,7 @@ has 'highscores' => (
 );
 
 sub _build_highscores {
-	return _instantiate('WWW::IRail::DelayAnnouncer::Highscore');
+	return instantiate_easy('WWW::IRail::DelayAnnouncer::Highscore');
 }
 
 has 'achievements' => (
@@ -73,7 +74,7 @@ has 'achievements' => (
 );
 
 sub _build_achievements {
-	return _instantiate('WWW::IRail::DelayAnnouncer::Achievement');
+	return instantiate_easy('WWW::IRail::DelayAnnouncer::Achievement');
 }
 
 
@@ -93,10 +94,10 @@ sub BUILD {
 	$self->{liveboard} = new WWW::IRail::DelayAnnouncer::Liveboard(station => $self->station());
 }
 
-sub add_listener {
-	my ($self, $listener) = @_;
+sub add_publisher {
+	my ($self, $publisher) = @_;
 	
-	push @{$self->listeners()}, $listener;
+	push @{$self->publishers()}, $publisher;
 }
 
 sub run {
@@ -132,12 +133,12 @@ sub run {
 			}
 		}
 		
-		# Print messages
+		# Publish messages
 		if (scalar @messages > 0) {
-			DEBUG "Print messages";
+			DEBUG "Publish messages";
 			foreach my $message (@messages) {
-				foreach my $listener (@{$self->{listeners}}) {
-					&$listener($message);
+				foreach my $publisher (@{$self->{publishers}}) {
+					$publisher->publish($message);
 				}
 			}
 		}
@@ -146,80 +147,6 @@ sub run {
 	}	
 }
 
-
-################################################################################
-# Auxiliary
-#
-
-=pod
-
-=head1 Auxiliary
-
-=cut
-
-sub _discover {
-	my ($base) = @_;
-	
-	# Find the appropriate root folder
-	my $subfolders = $base;
-	$subfolders =~ s{::}{/}g;
-	my $root;
-	foreach my $directory (@INC) {
-		my $pluginpath = "$directory/$subfolders";
-		if (-d $pluginpath) {
-			$root = $pluginpath;
-			last;
-		}
-	}
-	LOGDIE "no inclusion directory matched plugin structure"
-		unless defined $root;
-	
-	# Scan for Perl-modules
-	my %plugins;
-	find( sub {
-		my $file = $File::Find::name;
-		if ($file =~ m{$root/(.*)\.pm$}) {
-			my $package = "$base/" . $1;
-			$package =~ s{\/+}{::}g;
-			$plugins{$package} = $file;
-		}
-	}, $root);
-	
-	return %plugins;
-}
-
-sub _instantiate {
-	my ($base) = @_;
-	
-	# Discover all plugins
-	my %plugins = _discover($base)
-		or LOGDIE "Error discovering plugins: $!";
-	
-	# Process all plugins
-	my @plugins_usable;
-	for my $package (sort keys %plugins) {
-		my $file = $plugins{$package};
-		
-		# Load the plugin
-		my $status = do $file;
-		if (!$status) {
-			if ($@) {
-				WARN "Error loading plugin $package: $@";
-			}
-			elsif ($!) {
-				WARN "Error loading plugin $package: $!";
-			}
-			else {
-				WARN "Error loading plugin $package: unknown failure";
-			}
-			next;
-		}
-		
-		push @plugins_usable, new $package;
-	}
-	
-	return \@plugins_usable;
-}
 
 42;
 
