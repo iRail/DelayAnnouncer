@@ -52,12 +52,17 @@ sub messages {
 	my @departures = sort { $a->{time} <=> $b->{time} }
 		@{$database->current_liveboard()->departures()};
 	
-	# Get the delay window
+	# Get the delay window (e.g. from the soonest to depart train,
+	# to the first non-delayed one)
 	my $amount = 0;
 	my ($start, $end) = (time, time);
 	foreach my $departure (@departures) {
-		last unless ($departure->{delay});
 		$end = $departure->{time};
+		last unless ($departure->{delay});
+		if ($start > $departure->{time}) {
+			# In case a delayed train should already have left
+			$start = $departure->{time};
+		}
 		$amount++;
 	}
 	my $window = ($end - $start) / 60;
