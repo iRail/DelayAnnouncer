@@ -50,9 +50,9 @@ sub messages {
 	my ($self, $database) = @_;
 	
 	# Calculate delay
-	my $delay = max
+	my $delay = ( max
 		map { $_->{delay} }
-		@{$database->current_liveboard()->departures()};
+		@{$database->current_liveboard()->departures()} ) || 0;
 	$delay /= 60;
 	DEBUG "Maximum delay: $delay";
 	
