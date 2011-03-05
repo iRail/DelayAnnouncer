@@ -64,9 +64,9 @@ sub messages {
 	
 	# Check
 	DEBUG "Stored percentage: " . $self->storage()->{percentage};
-	if ($percentage > ($self->storage()->{percentage} + 25)) {
-		DEBUG "Current amount is 25% higher, triggering message";
-		$self->storage()->{percentage} += 25;
+	if ($percentage > ($self->storage()->{percentage} + 10)) {
+		DEBUG "Current amount is 10% higher, triggering message";
+		$self->storage()->{percentage} += 10;
 		
 		return [ 'delay at least '
 			. $self->storage()->{percentage}
