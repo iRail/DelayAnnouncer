@@ -116,12 +116,18 @@ sub publish {
 		$message .= " " . $self->{suffix_url};
 	}
 	
-	$self->twitter()->update({
-		status                  => $message,
-		long                    => $self->longitude(),
-		lat                     => $self->latitude(),
-		display_coordinates     => 1
-	});
+	if (defined $self->latitude() && defined $self->longitude()) {
+		$self->twitter()->update({
+			status                  => $message,
+			long                    => $self->longitude(),
+			lat                     => $self->latitude(),
+			display_coordinates     => 1
+		});
+	} else {
+		$self->twitter()->update({
+			status                  => $message
+		});		
+	}
 }
 
 42;
