@@ -64,6 +64,11 @@ has [qw/latitude longitude/] => (
 	required	=> 1
 );
 
+has 'suffix_url' => (
+	is		=> 'ro',
+	isa		=> 'Str'
+);
+
 
 ################################################################################
 # Methods
@@ -106,6 +111,10 @@ sub BUILD {
 
 sub publish {
 	my ($self, $message) = @_;
+	
+	if (defined $self->{suffix_url}) {
+		$message .= " " . $self->{suffix_url};
+	}
 	
 	$self->twitter()->update({
 		status                  => $message,
