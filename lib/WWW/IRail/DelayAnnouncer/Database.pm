@@ -305,12 +305,12 @@ END
 	
 }
 
-sub get_liveboard_range {
+sub get_departure_range {
 	my ($self, $start, $end) = @_;	
 	$end = time unless (defined $end);
 	
 	my $sth = $self->dbd()->prepare(<<END
-SELECT max(timestamp), max(station), vehicle, max(delay) AS maxdelay, max(platform), time
+SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
 FROM $self->{prefix}_liveboard
 WHERE timestamp BETWEEN ?  AND ?
 GROUP BY vehicle, time
@@ -321,17 +321,17 @@ END
 	$sth->bind_param(2, $end);
 	$sth->execute();
 	
-	my $result = $sth->fetchall_arrayref;
-	my @liveboards = map { _construct_liveboard(@_) }
+	my $result = $sth->fetchall_arrayref;use Data::Dumper;
+	my @departures = map { _construct_departure(@{$_}) }
 		@{$result};
-	return @liveboards;
+	return @departures;
 }
 
-sub get_earliest_liveboard {
+sub get_earliest_departure {
 	my ($self) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-SELECT *
+SELECT station, vehicle, delay, platform, time
 FROM $self->{prefix}_liveboard
 ORDER BY timestamp
 LIMIT 1
@@ -342,7 +342,7 @@ END
 	
 	my $result = $sth->fetchrow_arrayref;
 	if ($result) {
-		return _construct_liveboard($result->[0]);
+		return _construct_departure(@{$result});
 	} else {
 		return undef;
 	}
@@ -359,15 +359,14 @@ END
 
 =cut
 
-sub _construct_liveboard {	
-	return new Liveboard(
-				timestamp	=> $_[0],
-				station		=> $_[1],
-				vehicle		=> $_[2],
-				delay		=> $_[3],
-				platform	=> $_[4],
-				time		=> $_[5]
-			);
+sub _construct_departure {
+	return {
+		station		=> $_[0],
+		vehicle		=> $_[1],
+		delay		=> $_[2],
+		platform	=> $_[3],
+		time		=> $_[4]
+	};
 }
 
 42;

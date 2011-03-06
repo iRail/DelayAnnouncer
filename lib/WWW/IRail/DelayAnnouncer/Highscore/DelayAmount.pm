@@ -41,11 +41,11 @@ with 'WWW::IRail::DelayAnnouncer::Highscore';
 =cut
 
 sub calculate_score {
-	my ($self, $liveboard) = @_;
+	my ($self, $database) = @_;
 	
 	my $amount = sum
 		grep { $_->{delay} }
-		@{$liveboard->departures()};
+		@{$database->current_liveboard()->departures()};
 	DEBUG "Delay amount: $amount";
 	return $amount;
 };

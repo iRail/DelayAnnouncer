@@ -112,15 +112,16 @@ sub run {
 	DEBUG "Entering main loop";
 	while (1) {
 		DEBUG "Updating liveboard";
-		my $liveboard = $self->liveboardupdater()->update();
-		$self->database()->add_liveboard($liveboard);
+		$self->database()->add_liveboard($self->liveboardupdater()->update());
 		my @messages;
 		
 		# Check highscores
 		DEBUG "Checking highscores";
 		foreach my $plugin (@{$self->highscores()}) {
 			DEBUG "Processing " . ref($plugin);
-			my $score = $plugin->calculate_score($liveboard);
+			my $score = $plugin->calculate_score($self->database());
+			next unless defined($score);
+			
 			if ($score > $self->database()->get_highscore($plugin->id())) {
 				push @messages, $plugin->message($self->station(), $score);
 				$self->database()->set_highscore($plugin->id(), $score);
