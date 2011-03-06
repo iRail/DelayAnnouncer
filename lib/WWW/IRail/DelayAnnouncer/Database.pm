@@ -305,6 +305,34 @@ END
 	
 }
 
+sub get_liveboard_range {
+	my ($self, $start, $end) = @_;	
+	$end = time unless (defined $end);
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT max(timestamp), max(station), vehicle, max(delay) AS maxdelay, max(platform), time
+FROM $self->{prefix}_liveboard
+WHERE timestamp BETWEEN ?  AND ?
+GROUP BY vehicle, time
+END
+	);
+	
+	$sth->bind_param(1, $start);
+	$sth->bind_param(2, $end);
+	
+	my $result = $sth->fetchall_arrayref;
+	my @liveboards = map { new Liveboard(
+				timestamp	=> $_[0],
+				station		=> $_[1],
+				vehicle		=> $_[2],
+				delay		=> $_[3],
+				platform	=> $_[4],
+				time		=> $_[5]
+			) }
+		@{$result};
+	return @liveboards;
+}
+
 42;
 
 __END__
