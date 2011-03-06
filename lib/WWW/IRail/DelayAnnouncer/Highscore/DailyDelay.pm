@@ -54,17 +54,18 @@ sub calculate_score {
 sub message {
 	my ($self, $station, $score) = @_;
 	
-	return "$station just pushed its daily-accumulated delay to "
-		. duration($score);
+	return "$station just accomplished "
+		. duration($score)
+		. " of delay in a single day";
 }
 
 sub global_message {
 	my ($self, $station, $previous_station, $score) = @_;
 	
 	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader of total delay in a single day";		
+		return "$station just ousted $previous_station as leader of the daily delay rankings";
 	} else {
-		return "$station just became leader of total delay in a single day";
+		return undef;
 	}
 }
 
