@@ -76,7 +76,7 @@ sub messages {
 	DEBUG "Stored window " . $self->storage()->{window};
 	if ($window > ($self->storage()->{window} + 5)) {
 		DEBUG "Current window is 5 minutes longer, triggering message";
-		$self->storage()->{window} += 5;
+		$self->storage()->{window} = $window - $window % 5;
 		
 		return [ 'delay all trains within the next '
 			. NO("minutes", $self->storage()->{window}) ];

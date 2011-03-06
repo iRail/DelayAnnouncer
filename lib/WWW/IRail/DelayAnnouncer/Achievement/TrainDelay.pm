@@ -60,7 +60,7 @@ sub messages {
 	DEBUG "Stored delay: " . $self->storage()->{delay};
 	if ($delay > ($self->storage()->{delay} + 10)) {
 		DEBUG "Current delay is 10 minutes higher, triggering message";
-		$self->storage()->{delay} += 10;
+		$self->storage()->{delay} = $delay - $delay % 10;
 		
 		return [ 'delay a train '
 			. NO("minute", $self->storage()->{delay})
