@@ -155,6 +155,7 @@ sub run {
 		if (scalar @messages > 0) {
 			DEBUG "Publish messages";
 			foreach my $message (@messages) {
+				next unless (defined $message);
 				foreach my $publisher (@{$self->{publishers}}) {
 					$publisher->publish($message);
 				}
