@@ -54,7 +54,7 @@ sub calculate_score {
 sub message {
 	my ($self, $station, $score) = @_;
 	
-	return "$station just accomplished "
+	return "$station managed to collect "
 		. duration($score)
 		. " of delay in a single day";
 }
