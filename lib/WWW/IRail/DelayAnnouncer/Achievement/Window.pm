@@ -79,7 +79,7 @@ sub messages {
 		$self->storage()->{window} = $window - $window % 5;
 		
 		return [ 'delay all trains within the next '
-			. NO("minutes", $self->storage()->{window}) ];
+			. NO("minute", $self->storage()->{window}) ];
 	}	
 	return []
 }
