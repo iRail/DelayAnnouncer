@@ -149,7 +149,7 @@ sub add_liveboard {
 	my ($self, $liveboard) = @_;
 	
 	$self->{previous_liveboard} = $self->{current_liveboard};
-	$self->{current_liveboard} = $liveboard->clone_data();
+	$self->{current_liveboard} = $liveboard;
 	
 	my $sth = $self->dbd()->prepare(<<END
 INSERT INTO $self->{prefix}_liveboard (timestamp, station, vehicle, delay, platform, time)

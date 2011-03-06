@@ -8,7 +8,7 @@ package WWW::IRail::DelayAnnouncer;
 # Packages
 use Moose;
 use File::Find;
-use WWW::IRail::DelayAnnouncer::Liveboard;
+use WWW::IRail::DelayAnnouncer::LiveboardUpdater;
 use WWW::IRail::DelayAnnouncer::Database;
 use WWW::IRail::DelayAnnouncer::Auxiliary qw/instantiate_easy/;
 use Log::Log4perl qw(:easy);
@@ -52,9 +52,9 @@ has 'delay' => (
 	default		=> 60
 );
 
-has 'liveboard' => (
+has 'liveboardupdater' => (
 	is		=> 'ro',
-	isa		=> 'WWW::IRail::DelayAnnouncer::Liveboard',
+	isa		=> 'WWW::IRail::DelayAnnouncer::LiveboardUpdater',
 );
 
 has 'database' => (
@@ -97,7 +97,7 @@ sub _build_achievements {
 sub BUILD {
 	my ($self, $args) = @_;
 	
-	$self->{liveboard} = new WWW::IRail::DelayAnnouncer::Liveboard(station => $self->station());
+	$self->{liveboardupdater} = new WWW::IRail::DelayAnnouncer::LiveboardUpdater(station => $self->station());
 }
 
 sub add_publisher {
@@ -112,15 +112,15 @@ sub run {
 	DEBUG "Entering main loop";
 	while (1) {
 		DEBUG "Updating liveboard";
-		$self->liveboard()->update();
-		$self->database()->add_liveboard($self->liveboard());
+		my $liveboard = $self->liveboardupdater()->update();
+		$self->database()->add_liveboard($liveboard);
 		my @messages;
 		
 		# Check highscores
 		DEBUG "Checking highscores";
 		foreach my $plugin (@{$self->highscores()}) {
 			DEBUG "Processing " . ref($plugin);
-			my $score = $plugin->calculate_score($self->liveboard());
+			my $score = $plugin->calculate_score($liveboard);
 			if ($score > $self->database()->get_highscore($plugin->id())) {
 				push @messages, $plugin->message($self->station(), $score);
 				$self->database()->set_highscore($plugin->id(), $score);
