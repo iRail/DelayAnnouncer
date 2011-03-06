@@ -241,7 +241,7 @@ sub set_global_highscore {
 INSERT OR REPLACE
 INTO highscores
 (id, timestamp, owner, score)
-VALUES (?, ?, ?)
+VALUES (?, ?, ?, ?)
 END
 	);
 	
