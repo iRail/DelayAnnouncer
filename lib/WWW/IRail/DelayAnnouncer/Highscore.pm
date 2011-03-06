@@ -63,7 +63,7 @@ around 'global_message' => sub {
 	my $self = shift;
 	
 	my $message = $self->$orig(@_);
-	$message = "New leader: $message!";
+	$message = "Leadership change: $message!";
 	
 	return $message;
 };
