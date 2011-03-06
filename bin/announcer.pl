@@ -83,7 +83,8 @@ GetOptions(
     "config|c=s",
     "help|h",
     "man",
-    "init"
+    "init",
+    "init-shared"
 );
 
 # Actions
@@ -178,8 +179,13 @@ LOGDIE "Please define a DBD URI to use"
 my $database = new WWW::IRail::DelayAnnouncer::Database(%$config_database);
 
 if ($params{init}) {
-    DEBUG "Creating database";
+    DEBUG "Creating database (local tables)";
     $database->create();
+}
+
+if ($params{'init-shared'}) {
+    DEBUG "Creating database (shared tables)";
+    $database->create_shared();
 }
 
 

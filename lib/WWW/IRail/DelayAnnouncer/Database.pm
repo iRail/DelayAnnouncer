@@ -31,6 +31,12 @@ has 'uri' => (
 	required	=> 1
 );
 
+has 'prefix' => (
+	is		=> 'ro',
+	isa		=> 'Str',
+	required	=> 1
+);
+
 has 'dbd' => (
 	is		=> 'ro',
 	isa		=> 'DBI::db',
@@ -78,7 +84,7 @@ sub create {
 	
 	# Liveboard table
 	my $sth = $self->dbd()->prepare(<<END
-CREATE TABLE liveboard (
+CREATE TABLE $self->prefix()_liveboard (
 	timestamp INTEGER,
 	station TEXT,
 	vehicle TEXT,
@@ -92,7 +98,7 @@ END
 	
 	# Highscore table
 	$sth = $self->dbd()->prepare(<<END
-CREATE TABLE highscores (
+CREATE TABLE $self->prefix()_highscores (
 	id TEXT PRIMARY KEY,
 	timestamp INTEGER,
 	score INTEGER	
@@ -103,12 +109,28 @@ END
 	
 	# Achievement table
 	$sth = $self->dbd()->prepare(<<END
-CREATE TABLE achievements (
+CREATE TABLE $self->prefix()_achievements (
 	id,
 	timestamp INTEGER,
 	key TEXT,
 	value TEXT,
 	PRIMARY KEY (id, key)
+)	
+END
+	);
+	$sth->execute();
+}
+
+sub create_shared {
+	my ($self) = @_;
+	
+	# Highscore table
+	my $sth = $self->dbd()->prepare(<<END
+CREATE TABLE highscores (
+	id TEXT PRIMARY KEY,
+	timestamp INTEGER,
+	owner TEXT,
+	score INTEGER	
 )	
 END
 	);
@@ -130,7 +152,7 @@ sub add_liveboard {
 	$self->{current_liveboard} = $liveboard->clone_data();
 	
 	my $sth = $self->dbd()->prepare(<<END
-INSERT INTO liveboard (timestamp, station, vehicle, delay, platform, time)
+INSERT INTO $self->prefix()_liveboard (timestamp, station, vehicle, delay, platform, time)
 VALUES (?, ?, ?, ?, ?, ?)
 END
 	);
@@ -150,7 +172,7 @@ sub get_highscore {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT score
-FROM highscores
+FROM $self->prefix()_highscores
 WHERE id == ?
 END
 	);
@@ -171,7 +193,7 @@ sub set_highscore {
 	
 	my $sth = $self->dbd()->prepare(<<END
 INSERT OR REPLACE
-INTO highscores
+INTO $self->prefix()_highscores
 (id, timestamp, score)
 VALUES (?, ?, ?)
 END
@@ -202,7 +224,7 @@ sub get_achievement_storage {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT key, value
-FROM achievements
+FROM $self->prefix()_achievements
 WHERE id == ?
 END
 	);
@@ -221,7 +243,7 @@ sub set_achievement_storage {
 	
 	my $sth = $self->dbd()->prepare(<<END
 INSERT OR REPLACE
-INTO achievements
+INTO $self->prefix()_achievements
 (id, timestamp, key, value)
 VALUES (?, ?, ?, ?)
 END
