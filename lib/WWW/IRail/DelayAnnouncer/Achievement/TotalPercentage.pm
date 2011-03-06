@@ -16,6 +16,9 @@ use warnings;
 # Roles
 with 'WWW::IRail::DelayAnnouncer::Achievement';
 
+# Package information
+our $ENABLED = 1;
+
 
 ################################################################################
 # Attributes

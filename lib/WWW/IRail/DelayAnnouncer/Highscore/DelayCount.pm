@@ -17,6 +17,9 @@ use warnings;
 # Roles
 with 'WWW::IRail::DelayAnnouncer::Highscore';
 
+# Package information
+our $ENABLED = 0;
+
 
 ################################################################################
 # Attributes
@@ -67,7 +70,7 @@ sub global_message {
 	}
 }
 
-0;
+42;
 
 __END__
 

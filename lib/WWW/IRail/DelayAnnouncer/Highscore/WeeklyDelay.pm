@@ -19,6 +19,9 @@ use warnings;
 # Roles
 with 'WWW::IRail::DelayAnnouncer::Highscore';
 
+# Package information
+our $ENABLED = 0;
+
 
 ################################################################################
 # Attributes

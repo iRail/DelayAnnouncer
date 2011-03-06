@@ -72,7 +72,9 @@ has 'highscores' => (
 sub _build_highscores {
 	my %plugins = discover('WWW::IRail::DelayAnnouncer::Highscore')
 		or LOGDIE "Error discovering highscore plugins: $!";
-	return instantiate(\%plugins, undef);
+	my @objects = @{instantiate(\%plugins, undef)};
+	return [grep { eval('$' . ref($_) . '::ENABLED || 0') }
+		@objects];
 }
 
 has 'achievements' => (
@@ -84,7 +86,9 @@ has 'achievements' => (
 sub _build_achievements {
 	my %plugins = discover('WWW::IRail::DelayAnnouncer::Achievement')
 		or LOGDIE "Error discovering achievement plugins: $!";
-	return instantiate(\%plugins, undef);
+	my @objects = @{instantiate(\%plugins, undef)};
+	return [grep { eval('$' . ref($_) . '::ENABLED || 0') }
+		@objects];
 }
 
 
