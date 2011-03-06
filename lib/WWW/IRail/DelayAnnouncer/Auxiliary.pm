@@ -11,7 +11,7 @@ use Log::Log4perl qw(:easy);
 
 # Export
 use base 'Exporter';
-our @EXPORT = ('discover', 'instantiate', 'instantiate_easy');
+our @EXPORT = ('discover', 'instantiate');
 
 # Write nicely
 use strict;
@@ -57,17 +57,6 @@ sub discover {
 	}, $root);
 	
 	return %plugins;
-}
-
-sub instantiate_easy {
-	my ($base) = @_;
-	
-	# Discover all plugins
-	my %plugins = discover($base)
-		or LOGDIE "Error discovering plugins: $!";
-	
-	# Instantiage the plugins
-	return instantiate(\%plugins, undef);
 }
 
 sub instantiate {

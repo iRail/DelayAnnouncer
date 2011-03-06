@@ -10,7 +10,7 @@ use Moose;
 use File::Find;
 use WWW::IRail::DelayAnnouncer::LiveboardUpdater;
 use WWW::IRail::DelayAnnouncer::Database;
-use WWW::IRail::DelayAnnouncer::Auxiliary qw/instantiate_easy/;
+use WWW::IRail::DelayAnnouncer::Auxiliary qw/discover instantiate/;
 use Log::Log4perl qw(:easy);
 
 # Write nicely
@@ -70,7 +70,9 @@ has 'highscores' => (
 );
 
 sub _build_highscores {
-	return instantiate_easy('WWW::IRail::DelayAnnouncer::Highscore');
+	my %plugins = discover('WWW::IRail::DelayAnnouncer::Highscore')
+		or LOGDIE "Error discovering highscore plugins: $!";
+	return instantiate(\%plugins, undef);
 }
 
 has 'achievements' => (
@@ -80,7 +82,9 @@ has 'achievements' => (
 );
 
 sub _build_achievements {
-	return instantiate_easy('WWW::IRail::DelayAnnouncer::Achievement');
+	my %plugins = discover('WWW::IRail::DelayAnnouncer::Achievement')
+		or LOGDIE "Error discovering achievement plugins: $!";
+	return instantiate(\%plugins, undef);
 }
 
 
