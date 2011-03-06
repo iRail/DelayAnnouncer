@@ -91,6 +91,20 @@ sub _build_achievements {
 		@objects];
 }
 
+has 'notifications' => (
+	is		=> 'ro',
+	isa		=> 'ArrayRef',
+	builder		=> '_build_notifications'
+);
+
+sub _build_notifications {
+	my %plugins = discover('WWW::IRail::DelayAnnouncer::Notification')
+		or LOGDIE "Error discovering achievement plugins: $!";
+	my @objects = @{instantiate(\%plugins, undef)};
+	return [grep { eval('$' . ref($_) . '::ENABLED || 0') }
+		@objects];
+}
+
 
 ################################################################################
 # Methods
@@ -158,6 +172,17 @@ sub run {
 				push @messages, @$plugin_messages;
 				$self->database()->set_achievement_storage($plugin->id(), $plugin->storage());
 			}
+		}
+		
+		# Check notifications
+		DEBUG "Checking notifications";
+		foreach my $plugin (@{$self->notifications()}) {
+			DEBUG "Processing " . ref($plugin);
+			my $plugin_messages = $plugin->messages($self->database());
+			# TODO: manage storage from here... but don't load too many fields within perl
+			if (@$plugin_messages) {
+				push @messages, @$plugin_messages;
+			}			
 		}
 		
 		# Publish messages

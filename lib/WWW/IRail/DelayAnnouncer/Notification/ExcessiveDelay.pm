@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement::TrainDelay;
+package WWW::IRail::DelayAnnouncer::Notification::ExcessiveDelay;
 
 # Packages
 use Moose;
@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Achievement';
+with 'WWW::IRail::DelayAnnouncer::Notification';
 
 # Package information
 our $ENABLED = 1;
@@ -43,33 +43,30 @@ our $ENABLED = 1;
 
 =cut
 
-sub init_storage {
-	my ($self) = @_;
-	
-	$self->storage()->{delay} = 0;
-}
-
 sub messages {
 	my ($self, $database) = @_;
 	
-	# Calculate delay
-	my $delay = ( max
-		map { $_->{delay} }
-		@{$database->current_liveboard()->departures()} ) || 0;
-	$delay  = int($delay / 60);
-	DEBUG "Maximum delay: " . NO("minute", $delay);
-	
-	# Check
-	DEBUG "Stored delay: " . $self->storage()->{delay};
-	if ($delay > ($self->storage()->{delay} + 10)) {
-		DEBUG "Current delay is 10 minutes higher, triggering message";
-		$self->storage()->{delay} = $delay - $delay % 10;
-		
-		return [ 'delay a train '
-			. NO("minute", $self->storage()->{delay})
-			. ' or more' ];
-	}	
-	return [];
+	# Process all departures
+	my @messages;
+	foreach my $departure (@{$database->current_liveboard()->departures()}) {
+		if ($departure->{delay} > 0) {
+			my $delay = int($departure->{delay} / 60);
+			my $previous_delay = $self->get_data($database, $departure->{station}, $departure->{time}) || 0;
+			if ($delay > $previous_delay + 10) {
+				$delay = $delay - $delay % 10;
+				$self->set_data($database, $departure->{station} ,$departure->{time}, $delay);
+				my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($departure->{time});
+				push @messages, [ "warn", "the train of "
+					. sprintf("%02i:%02i", $hour, $min)
+					. " to "
+					. $departure->{station}
+					. " has over "
+					. NO("minute", $delay)
+					. " of delay" ];
+			}
+		}
+	}
+	return \@messages;
 }
 
 

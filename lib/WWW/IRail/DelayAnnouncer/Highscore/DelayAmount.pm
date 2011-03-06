@@ -49,7 +49,8 @@ sub calculate_score {
 	my $amount = sum
 		grep { $_->{delay} }
 		@{$database->current_liveboard()->departures()};
-	DEBUG "Delay amount: $amount";
+	$amount = int($amount/60);
+	DEBUG "Delay amount: " . NO("minute", $amount);
 	return $amount;
 };
 

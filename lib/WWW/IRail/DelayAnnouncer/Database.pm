@@ -110,11 +110,25 @@ END
 	# Achievement table
 	$sth = $self->dbd()->prepare(<<END
 CREATE TABLE $self->{prefix}_achievements (
-	id,
+	id TEXT,
 	timestamp INTEGER,
 	key TEXT,
 	value TEXT,
 	PRIMARY KEY (id, key)
+)	
+END
+	);
+	$sth->execute();
+	
+	# Notification table
+	$sth = $self->dbd()->prepare(<<END
+CREATE TABLE $self->{prefix}_notifications (
+	id TEXT,
+	timestamp INTEGER,
+	station INTEGER,
+	time INTEGER,
+	data TEXT,
+	PRIMARY KEY (id, station, time)
 )	
 END
 	);
@@ -302,6 +316,50 @@ END
 	$sth->bind_param_array(4, [ values %{$storage} ]);
 	
 	$sth->execute_array( {} );
+	
+}
+
+sub get_notification_data {
+	my ($self, $plugin, $station, $time) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT data
+FROM $self->{prefix}_notifications
+WHERE id == ? AND station == ? AND time == ?
+END
+	);
+	
+	$sth->bind_param(1, $plugin);
+	$sth->bind_param(2, $station);
+	$sth->bind_param(3, $time);
+	$sth->execute();
+	
+	my $result = $sth->fetchrow_arrayref;
+	if ($result) {
+		return $result->[0];
+	} else {
+		return undef;
+	}
+}
+
+sub set_notification_data {
+	my ($self, $plugin, $station, $time, $data) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+INSERT OR REPLACE
+INTO $self->{prefix}_notifications
+(id, timestamp, station, time, data)
+VALUES (?, ?, ?, ?, ?)
+END
+	);
+	
+	$sth->bind_param(1, $plugin);
+	$sth->bind_param(2, time);
+	$sth->bind_param(3, $station);
+	$sth->bind_param(4, $time);
+	$sth->bind_param(5, $data);
+	
+	$sth->execute();
 	
 }
 
