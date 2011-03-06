@@ -84,7 +84,7 @@ sub create {
 	
 	# Liveboard table
 	my $sth = $self->dbd()->prepare(<<END
-CREATE TABLE $self->prefix()_liveboard (
+CREATE TABLE $self->{prefix}_liveboard (
 	timestamp INTEGER,
 	station TEXT,
 	vehicle TEXT,
@@ -98,7 +98,7 @@ END
 	
 	# Highscore table
 	$sth = $self->dbd()->prepare(<<END
-CREATE TABLE $self->prefix()_highscores (
+CREATE TABLE $self->{prefix}_highscores (
 	id TEXT PRIMARY KEY,
 	timestamp INTEGER,
 	score INTEGER	
@@ -109,7 +109,7 @@ END
 	
 	# Achievement table
 	$sth = $self->dbd()->prepare(<<END
-CREATE TABLE $self->prefix()_achievements (
+CREATE TABLE $self->{prefix}_achievements (
 	id,
 	timestamp INTEGER,
 	key TEXT,
@@ -152,7 +152,7 @@ sub add_liveboard {
 	$self->{current_liveboard} = $liveboard->clone_data();
 	
 	my $sth = $self->dbd()->prepare(<<END
-INSERT INTO $self->prefix()_liveboard (timestamp, station, vehicle, delay, platform, time)
+INSERT INTO $self->{prefix}_liveboard (timestamp, station, vehicle, delay, platform, time)
 VALUES (?, ?, ?, ?, ?, ?)
 END
 	);
@@ -172,7 +172,7 @@ sub get_highscore {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT score
-FROM $self->prefix()_highscores
+FROM $self->{prefix}_highscores
 WHERE id == ?
 END
 	);
@@ -193,7 +193,7 @@ sub set_highscore {
 	
 	my $sth = $self->dbd()->prepare(<<END
 INSERT OR REPLACE
-INTO $self->prefix()_highscores
+INTO $self->{prefix}_highscores
 (id, timestamp, score)
 VALUES (?, ?, ?)
 END
@@ -271,7 +271,7 @@ sub get_achievement_storage {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT key, value
-FROM $self->prefix()_achievements
+FROM $self->{prefix}_achievements
 WHERE id == ?
 END
 	);
@@ -290,7 +290,7 @@ sub set_achievement_storage {
 	
 	my $sth = $self->dbd()->prepare(<<END
 INSERT OR REPLACE
-INTO $self->prefix()_achievements
+INTO $self->{prefix}_achievements
 (id, timestamp, key, value)
 VALUES (?, ?, ?, ?)
 END
