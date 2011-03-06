@@ -99,7 +99,14 @@ sub update {
 		$self->{departures} = $data->{departures}{departure};
 	}
 	
+	DEBUG "Updated liveboard";
 	foreach my $departure (@{$self->{departures}}) {
+		my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($departure->{time});
+		DEBUG "Departure at "
+			. sprintf("%02i:%02i", $hour, $min)
+			. " to " . $departure->{station}
+			. ", on platform "
+			. $departure->{platform};
 		if ($departure->{platform} eq "NA") {
 			$departure->{platform} = undef;
 		}
