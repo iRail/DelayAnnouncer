@@ -67,7 +67,7 @@ sub global_message {
 	}
 }
 
-42;
+0;
 
 __END__
 

@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::Amount;
+package WWW::IRail::DelayAnnouncer::Highscore::DelayAmount;
 
 # Packages
 use Moose;
@@ -68,7 +68,7 @@ sub global_message {
 	}
 }
 
-42;
+0;
 
 __END__
 
