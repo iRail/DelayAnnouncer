@@ -65,7 +65,7 @@ sub global_message {
 	if (defined $previous_station) {
 		return "$station just ousted $previous_station as leader of the weekly delay rankings";
 	} else {
-		return undef;
+		return "$station just became leader of the weekly delay rankings";
 	}
 }
 
