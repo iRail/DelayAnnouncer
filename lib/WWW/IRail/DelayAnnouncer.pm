@@ -130,7 +130,7 @@ sub run {
 				$self->database()->lock_global_highscore();
 				my ($owner, $global_highscore) = $self->database()->get_global_highscore($plugin->id());
 				if ($score > $global_highscore) {
-					if ($owner ne $self->station()) {
+					unless (defined $owner && $owner eq $self->station()) {
 						push @messages, $plugin->global_message($self->station(), $owner, $score);
 					}
 					$self->database()->set_global_highscore($plugin->id(), $self->station(), $score);
