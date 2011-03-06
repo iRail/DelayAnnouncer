@@ -276,7 +276,7 @@ WHERE id == ?
 END
 	);
 	
-	$sth->bind_param(1, $plugin);	
+	$sth->bind_param(1, $plugin);
 	$sth->execute();
 	
 	my $result = $sth->fetchall_arrayref;
@@ -319,18 +319,55 @@ END
 	
 	$sth->bind_param(1, $start);
 	$sth->bind_param(2, $end);
+	$sth->execute();
 	
 	my $result = $sth->fetchall_arrayref;
-	my @liveboards = map { new Liveboard(
+	my @liveboards = map { _construct_liveboard(@_) }
+		@{$result};
+	return @liveboards;
+}
+
+sub get_earliest_liveboard {
+	my ($self) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT *
+FROM $self->{prefix}_liveboard
+ORDER BY timestamp
+LIMIT 1
+END
+	);
+	
+	$sth->execute();
+	
+	my $result = $sth->fetchrow_arrayref;
+	if ($result) {
+		return _construct_liveboard($result->[0]);
+	} else {
+		return undef;
+	}
+}
+
+
+################################################################################
+# Auxiliary
+#
+
+=pod
+
+=head1 AUXILIARY
+
+=cut
+
+sub _construct_liveboard {	
+	return new Liveboard(
 				timestamp	=> $_[0],
 				station		=> $_[1],
 				vehicle		=> $_[2],
 				delay		=> $_[3],
 				platform	=> $_[4],
 				time		=> $_[5]
-			) }
-		@{$result};
-	return @liveboards;
+			);
 }
 
 42;
