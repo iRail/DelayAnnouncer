@@ -205,6 +205,53 @@ END
 	$sth->execute();
 }
 
+sub get_global_highscore {
+	my ($self, $plugin) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT owner, score
+FROM highscores
+WHERE id == ?
+END
+	);
+	
+	$sth->bind_param(1, $plugin);	
+	$sth->execute();
+	
+	my $result = $sth->fetchrow_arrayref;
+	if ($result) {
+		return @$result;
+	} else {
+		return (undef, 0);
+	}	
+}
+
+sub lock_global_highscore() {
+	# TODO
+}
+
+sub unlock_global_highscore() {
+	# TODO
+}
+
+sub set_global_highscore {
+	my ($self, $plugin, $owner, $score) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+INSERT OR REPLACE
+INTO highscores
+(id, timestamp, owner, score)
+VALUES (?, ?, ?)
+END
+	);
+	
+	$sth->bind_param(1, $plugin);
+	$sth->bind_param(2, time);
+	$sth->bind_param(3, $owner);
+	$sth->bind_param(4, $score);
+	$sth->execute();
+}
+
 sub init_achievement {
 	my ($self, $achievement) = @_;
 	

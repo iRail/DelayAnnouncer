@@ -56,6 +56,16 @@ sub message {
 		. NO("train", $score);
 }
 
+sub global_message {
+	my ($self, $station, $previous_station, $score) = @_;
+	
+	if (defined $previous_station) {
+		return "$station just ousted $previous_station as leader of delayed trains";		
+	} else {
+		return "$station just became leader of delayed trains";		
+	}
+}
+
 42;
 
 __END__

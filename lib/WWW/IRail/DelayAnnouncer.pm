@@ -119,6 +119,13 @@ sub run {
 				push @messages, $plugin->message($self->station(), $score);
 				$self->database()->set_highscore($plugin->id(), $score);
 			}
+			$self->database()->lock_global_highscore();
+			my ($owner, $global_highscore) = $self->database()->get_global_highscore($plugin->id());
+			if ($score > $global_highscore) {
+				push @messages, $plugin->global_message($self->station(), $owner, $score);
+				$self->database()->set_global_highscore($plugin->id(), $self->station(), $score);
+			}
+			$self->database()->unlock_global_highscore();
 		}
 		
 		# Check achievements

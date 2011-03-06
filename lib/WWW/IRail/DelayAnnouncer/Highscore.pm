@@ -56,6 +56,18 @@ around 'message' => sub {
 	return $message;
 };
 
+requires 'global_message';
+
+around 'global_message' => sub {
+	my $orig = shift;
+	my $self = shift;
+	
+	my $message = $self->$orig(@_);
+	$message = "New leader: $message!";
+	
+	return $message;
+};
+
 42;
 
 __END__
