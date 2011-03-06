@@ -3,12 +3,13 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::DelayCount;
+package WWW::IRail::DelayAnnouncer::Highscore::Amount;
 
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
 use Lingua::EN::Inflect qw/:ALL/;
+use List::Util qw/sum/;
 
 # Write nicely
 use strict;
@@ -42,28 +43,28 @@ with 'WWW::IRail::DelayAnnouncer::Highscore';
 sub calculate_score {
 	my ($self, $liveboard) = @_;
 	
-	my $count = scalar
+	my $amount = sum
 		grep { $_->{delay} }
 		@{$liveboard->departures()};
-	DEBUG "Delay count: $count";
-	return $count;
+	DEBUG "Delay amount: $amount";
+	return $amount;
 };
 
 sub message {
 	my ($self, $station, $score) = @_;
 	
-	return "$station just delayed "
-		. $score
-		. " of the upcoming trains for the next hour";
+	return "$station just predicted "
+		. NO("minute", $score)
+		. " of delay for the next hour";
 }
 
 sub global_message {
 	my ($self, $station, $previous_station, $score) = @_;
 	
 	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader of delayed trains for the next hour";		
+		return "$station just ousted $previous_station as leader in amount of delay for the next hour";		
 	} else {
-		return "$station just became leader of delayed trains for the next hour";		
+		return "$station just became leader in amount of delay for the next hour";
 	}
 }
 
