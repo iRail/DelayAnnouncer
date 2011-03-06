@@ -232,6 +232,8 @@ DEBUG "Loading announcer";
 # Check configuration
 LOGDIE "Please define a station to use"
     unless (defined $config_announcer->{station});
+LOGDIE "Please specify whether this is a standalone installation or not."
+    unless (defined $config_announcer->{standalone});
 
 # Configure announcer
 my $announcer = new WWW::IRail::DelayAnnouncer(%{$config_announcer}, database => $database);
