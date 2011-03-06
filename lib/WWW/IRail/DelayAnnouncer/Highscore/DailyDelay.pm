@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::WeeklyDelay;
+package WWW::IRail::DelayAnnouncer::Highscore::DailyDelay;
 
 # Packages
 use Moose;
@@ -48,13 +48,13 @@ our $ENABLED = 1;
 sub calculate_score {
 	my ($self, $database) = @_;
 	
-	return $self->_calculate_score($database, 7 * 24 * 3600);
+	return $self->_calculate_score($database, 24 * 3600);
 };
 
 sub message {
 	my ($self, $station, $score) = @_;
 	
-	return "$station just pushed its weekly-accumulated delay to "
+	return "$station just pushed its daily-accumulated delay to "
 		. duration($score);
 }
 
@@ -62,9 +62,9 @@ sub global_message {
 	my ($self, $station, $previous_station, $score) = @_;
 	
 	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader of total delay in a single week";		
+		return "$station just ousted $previous_station as leader of total delay in a single day";		
 	} else {
-		return "$station just became leader of total delay in a single week";
+		return "$station just became leader of total delay in a single day";
 	}
 }
 

@@ -321,7 +321,7 @@ END
 	$sth->bind_param(2, $end);
 	$sth->execute();
 	
-	my $result = $sth->fetchall_arrayref;use Data::Dumper;
+	my $result = $sth->fetchall_arrayref;
 	my @departures = map { _construct_departure(@{$_}) }
 		@{$result};
 	return @departures;

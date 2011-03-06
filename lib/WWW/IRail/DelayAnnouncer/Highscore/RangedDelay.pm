@@ -3,25 +3,20 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::WeeklyDelay;
+package WWW::IRail::DelayAnnouncer::Highscore::RangedDelay;
 
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
+use List::Util qw/sum/;
 use Time::Duration;
 
 # Write nicely
 use strict;
 use warnings;
 
-# Roles
-with 'WWW::IRail::DelayAnnouncer::Highscore';
-
-# Base class
-extends 'WWW::IRail::DelayAnnouncer::Highscore::RangedDelay';
-
 # Package information
-our $ENABLED = 1;
+our $ENABLED = 0;
 
 
 ################################################################################
@@ -45,28 +40,25 @@ our $ENABLED = 1;
 
 =cut
 
-sub calculate_score {
-	my ($self, $database) = @_;
+sub _calculate_score {
+	my ($self, $database, $range) = @_;
 	
-	return $self->_calculate_score($database, 7 * 24 * 3600);
-};
-
-sub message {
-	my ($self, $station, $score) = @_;
+	my $start = time() - $range;
 	
-	return "$station just pushed its weekly-accumulated delay to "
-		. duration($score);
-}
-
-sub global_message {
-	my ($self, $station, $previous_station, $score) = @_;
+	my $earliest_departure = $database->get_earliest_departure();
 	
-	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader of total delay in a single week";		
-	} else {
-		return "$station just became leader of total delay in a single week";
+	if ($earliest_departure->{time} > $start) {
+		DEBUG "Bailing out, earliest departure falls within the range.";
+		return undef;
 	}
-}
+	
+	my @departures = $database->get_departure_range($start);
+	my $delay = sum
+		map { $_->{delay} }
+		@departures;
+	DEBUG "Accumulated delay: " . duration($delay);
+	return $delay;
+};
 
 42;
 
