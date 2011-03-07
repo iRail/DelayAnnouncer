@@ -47,8 +47,13 @@ sub calculate_score {
 	my ($self, $database) = @_;
 	
 	my @departures = $database->get_past_departures_consecutively_delayed();
-	DEBUG "Amount of consecutively delayed trains: " . (scalar @departures);
-	return (scalar @departures);
+	my $amount = (scalar @departures);
+	DEBUG "Amount of consecutively delayed trains: $amount";
+	if ($amount > 1) {
+		return $amount;
+	} else {
+		return 0;
+	}
 };
 
 sub message {
