@@ -56,7 +56,7 @@ sub messages {
 				$delay = $delay - $delay % 15;
 				$self->set_data($database, $departure->{station} ,$departure->{time}, $delay);
 				my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($departure->{time});
-				push @messages, [ "warn", "the train of "
+				push @messages, [ "info", "the train of "
 					. sprintf("%02i:%02i", $hour, $min)
 					. " to "
 					. $departure->{station}

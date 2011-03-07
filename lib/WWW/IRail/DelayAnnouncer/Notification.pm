@@ -63,7 +63,7 @@ around 'messages' => sub {
 	foreach my $message (@$messages) {
 		my ($level, $text) = @$message;
 		if ($level eq "info") {
-			$message = "Newsflash: $text.";
+			$message = ucfirst($text) . ".";
 		} elsif ($level eq "warn") {
 			$message = "Watch out: $text!";
 		}
