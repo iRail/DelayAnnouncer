@@ -66,9 +66,9 @@ sub global_message {
 	my ($self, $station, $previous_station, $score) = @_;
 	
 	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader in amount of delay for the next hour";		
+		return "$station just ousted $previous_station as leader of upcoming amount of delay";		
 	} else {
-		return "$station just became leader in amount of delay for the next hour";
+		return "$station just became leader of upcoming amount of delay";
 	}
 }
 
