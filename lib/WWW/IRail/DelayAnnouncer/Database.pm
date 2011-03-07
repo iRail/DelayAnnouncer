@@ -370,7 +370,7 @@ sub get_departure_range {
 	my $sth = $self->dbd()->prepare(<<END
 SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
 FROM $self->{prefix}_liveboard
-WHERE timestamp BETWEEN ?  AND ?
+WHERE timestamp BETWEEN ? AND ?
 GROUP BY vehicle, time
 END
 	);
@@ -391,7 +391,7 @@ sub get_earliest_departure {
 	my $sth = $self->dbd()->prepare(<<END
 SELECT station, vehicle, delay, platform, time
 FROM $self->{prefix}_liveboard
-ORDER BY timestamp
+ORDER BY timestamp ASC, time ASC
 LIMIT 1
 END
 	);
@@ -406,6 +406,94 @@ END
 	}
 }
 
+sub get_past_departures {
+	my ($self, $amount) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
+FROM $self->{prefix}_liveboard
+WHERE time < strftime('%s')
+GROUP BY vehicle, time
+ORDER BY time desc
+LIMIT ?
+END
+	);
+	
+	$sth->bind_param(1, $amount);
+	$sth->execute();
+	
+	my $result = $sth->fetchall_arrayref;
+	my @departures = map { _construct_departure(@{$_}) }
+		@{$result};
+	return @departures;	
+}
+
+sub get_past_departures_to {
+	my ($self, $station, $amount) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT vehicle, max(delay) AS maxdelay, max(platform), time
+FROM $self->{prefix}_liveboard
+WHERE station == ?
+WHERE time < strftime('%s')
+GROUP BY vehicle, time
+ORDER BY time desc
+LIMIT ?
+END
+	);
+	
+	$sth->bind_param(1, $station);
+	$sth->bind_param(2, $amount);
+	$sth->execute();
+	
+	my $result = $sth->fetchall_arrayref;
+	my @departures = map { _construct_departure($station, @{$_}) }
+		@{$result};
+	return @departures;
+}
+
+sub get_unique_destinations {
+	my ($self) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT station
+FROM $self->{prefix}_liveboard
+GROUP BY station
+END
+	);
+	
+	$sth->execute();
+	
+	my $result = $sth->fetchall_arrayref;
+	return map { $_->[0] } @$result;
+}
+
+sub get_past_departures_consecutively_delayed {
+	my ($self, $station, $amount) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
+FROM $self->{prefix}_liveboard
+WHERE time BETWEEN (
+	SELECT time
+	FROM $self->{prefix}_liveboard
+	WHERE time < strftime('%s')
+	GROUP BY vehicle, time
+	HAVING max(delay) == 0
+	ORDER BY time DESC
+	LIMIT 1
+) AND strftime('%s')
+GROUP BY vehicle, time
+END
+	);
+	
+	$sth->execute();
+	
+	my $result = $sth->fetchall_arrayref;
+	my @departures = map { _construct_departure(@{$_}) }
+		@{$result};
+	return @departures;	
+}
 
 ################################################################################
 # Auxiliary
