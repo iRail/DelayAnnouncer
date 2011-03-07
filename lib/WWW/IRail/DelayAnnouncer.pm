@@ -165,6 +165,11 @@ sub run {
 					if ($score > $global_highscore) {
 						DEBUG "Global highscore topped with a score of $score";
 						unless (defined $owner && $owner eq $self->station()) {
+							# Force a publish of a queue'd highscore message as well
+							if (defined $plugin_highscores{$plugin->id()}) {
+								push @messages, $plugin_highscores{$plugin->id()};
+								delete $plugin_highscores{$plugin->id()};
+							}							
 							push @messages, $plugin->global_message($self->station(), $owner, $score);
 						}
 						$self->database()->set_global_highscore($plugin->id(), $self->station(), $score);
