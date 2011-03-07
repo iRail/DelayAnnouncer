@@ -52,8 +52,8 @@ sub messages {
 		if ($departure->{delay} > 0) {
 			my $delay = int($departure->{delay} / 60);
 			my $previous_delay = $self->get_data($database, $departure->{station}, $departure->{time}) || 0;
-			if ($delay > $previous_delay + 10) {
-				$delay = $delay - $delay % 10;
+			if ($delay > $previous_delay + 15) {
+				$delay = $delay - $delay % 15;
 				$self->set_data($database, $departure->{station} ,$departure->{time}, $delay);
 				my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($departure->{time});
 				push @messages, [ "warn", "the train of "
