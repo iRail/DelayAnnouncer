@@ -146,29 +146,24 @@ sub run {
 				DEBUG "Processing " . ref($plugin);
 				my $score = $plugin->calculate_score($self->database());
 				next unless defined($score);
+				DEBUG "Current score: $score";
 				
-				if ($score > $self->database()->get_highscore($plugin->id())) {
+				# Check score
+				my $highscore = $self->database()->get_highscore($plugin->id());
+				DEBUG "Saved highscore: $highscore";
+				if ($score > $highscore) {
+					DEBUG "Highscore topped with a score of $score";
 					$plugin_highscores{$plugin->id()} = [ time, $plugin->message($self->station(), $score) ];
 					$self->database()->set_highscore($plugin->id(), $score);
 				}
-				foreach my $plugin (keys %plugin_highscores) {
-					my ($time, $message) = @{$plugin_highscores{$plugin}};
-					if (time - $time > 600) {	# Wait for the highscore to settle
-						push @messages, $message;
-						delete $plugin_highscores{$plugin};
-					} else {
-						DEBUG "Not publishing a message of "
-						. $plugin
-						. " due to not settled ("
-						. (time - $time)
-						. " seconds passed since publish)";
-					}
-				}
 				
+				# Check global score
 				unless ($self->standalone()) {
 					$self->database()->lock_global_highscore();
 					my ($owner, $global_highscore) = $self->database()->get_global_highscore($plugin->id());
+					DEBUG "Current owner of global highscore: $owner, with a score of $global_highscore";
 					if ($score > $global_highscore) {
+						DEBUG "Global highscore topped with a score of $score";
 						unless (defined $owner && $owner eq $self->station()) {
 							push @messages, $plugin->global_message($self->station(), $owner, $score);
 						}
@@ -177,6 +172,19 @@ sub run {
 					$self->database()->unlock_global_highscore();
 				}
 			}
+			foreach my $plugin (keys %plugin_highscores) {
+				my ($time, $message) = @{$plugin_highscores{$plugin}};
+				if (time - $time > 600) {	# Wait for the highscore to settle
+					push @messages, $message;
+					delete $plugin_highscores{$plugin};
+				} else {
+					DEBUG "Not yet publishing a message of "
+					. $plugin
+					. " due to not settled ("
+					. (time - $time)
+					. " seconds passed since publish)";
+				}
+			}			
 			
 			# Check achievements
 			DEBUG "Checking achievements";

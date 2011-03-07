@@ -52,7 +52,7 @@ sub calculate_score {
 	if ($amount > 1) {
 		return $amount;
 	} else {
-		return 0;
+		return undef;
 	}
 };
 
