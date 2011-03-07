@@ -64,7 +64,7 @@ has [qw/latitude longitude/] => (
 	required	=> 1
 );
 
-has 'suffix_url' => (
+has [qw/suffix_url hashtag/] => (
 	is		=> 'ro',
 	isa		=> 'Str'
 );
@@ -113,7 +113,11 @@ sub publish {
 	my ($self, $message) = @_;
 	
 	if (defined $self->{suffix_url}) {
-		$message .= " " . $self->{suffix_url};
+		$message .= ' ' . $self->{suffix_url};
+	}
+	
+	if (defined $self->{hashtag}) {
+		$message .= ' #' . $self->{hashtag};
 	}
 	
 	if (defined $self->latitude() && defined $self->longitude()) {
