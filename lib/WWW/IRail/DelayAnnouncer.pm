@@ -135,81 +135,85 @@ sub run {
 	my %plugin_highscores;
 	while (1) {
 		DEBUG "Updating liveboard";
-		$self->database()->add_liveboard($self->liveboardupdater()->update());
-		my @messages;
-		
-		# Check highscores
-		DEBUG "Checking highscores";
-		foreach my $plugin (@{$self->highscores()}) {
-			DEBUG "Processing " . ref($plugin);
-			my $score = $plugin->calculate_score($self->database());
-			next unless defined($score);
+		my $liveboard = $self->liveboardupdater()->update();
+		if (defined $liveboard) {
+			$self->database()->add_liveboard($liveboard);
+			my @messages;
 			
-			if ($score > $self->database()->get_highscore($plugin->id())) {
-				$plugin_highscores{$plugin->id()} = [ time, $plugin->message($self->station(), $score) ];
-				$self->database()->set_highscore($plugin->id(), $score);
-			}
-			foreach my $plugin (keys %plugin_highscores) {
-				my ($time, $message) = @{$plugin_highscores{$plugin}};
-				if (time - $time > 600) {	# Wait for the highscore to settle
-					push @messages, $message;
-					delete $plugin_highscores{$plugin};
-				} else {
-					DEBUG "Not publishing a message of "
-					. $plugin
-					. " due to not settled ("
-					. (time - $time)
-					. " seconds passed since publish)";
+			# Check highscores
+			DEBUG "Checking highscores";
+			foreach my $plugin (@{$self->highscores()}) {
+				DEBUG "Processing " . ref($plugin);
+				my $score = $plugin->calculate_score($self->database());
+				next unless defined($score);
+				
+				if ($score > $self->database()->get_highscore($plugin->id())) {
+					$plugin_highscores{$plugin->id()} = [ time, $plugin->message($self->station(), $score) ];
+					$self->database()->set_highscore($plugin->id(), $score);
 				}
-			}
-			
-			unless ($self->standalone()) {
-				$self->database()->lock_global_highscore();
-				my ($owner, $global_highscore) = $self->database()->get_global_highscore($plugin->id());
-				if ($score > $global_highscore) {
-					unless (defined $owner && $owner eq $self->station()) {
-						push @messages, $plugin->global_message($self->station(), $owner, $score);
+				foreach my $plugin (keys %plugin_highscores) {
+					my ($time, $message) = @{$plugin_highscores{$plugin}};
+					if (time - $time > 600) {	# Wait for the highscore to settle
+						push @messages, $message;
+						delete $plugin_highscores{$plugin};
+					} else {
+						DEBUG "Not publishing a message of "
+						. $plugin
+						. " due to not settled ("
+						. (time - $time)
+						. " seconds passed since publish)";
 					}
-					$self->database()->set_global_highscore($plugin->id(), $self->station(), $score);
 				}
-				$self->database()->unlock_global_highscore();
-			}
-		}
-		
-		# Check achievements
-		DEBUG "Checking achievements";
-		foreach my $plugin (@{$self->achievements()}) {
-			DEBUG "Processing " . ref($plugin);
-			$self->database()->init_achievement($plugin);
-			my $plugin_messages = $plugin->messages($self->database());
-			if (@$plugin_messages) {
-				push @messages, @$plugin_messages;
-				$self->database()->set_achievement_storage($plugin->id(), $plugin->storage());
-			}
-		}
-		
-		# Check notifications
-		DEBUG "Checking notifications";
-		foreach my $plugin (@{$self->notifications()}) {
-			DEBUG "Processing " . ref($plugin);
-			my $plugin_messages = $plugin->messages($self->database());
-			# TODO: manage storage from here... but don't load too many fields within perl
-			if (@$plugin_messages) {
-				push @messages, @$plugin_messages;
-			}			
-		}
-		
-		# Publish messages
-		if (scalar @messages > 0) {
-			DEBUG "Publish messages";
-			foreach my $message (@messages) {
-				next unless (defined $message);
-				foreach my $publisher (@{$self->{publishers}}) {
-					$publisher->publish($message);
+				
+				unless ($self->standalone()) {
+					$self->database()->lock_global_highscore();
+					my ($owner, $global_highscore) = $self->database()->get_global_highscore($plugin->id());
+					if ($score > $global_highscore) {
+						unless (defined $owner && $owner eq $self->station()) {
+							push @messages, $plugin->global_message($self->station(), $owner, $score);
+						}
+						$self->database()->set_global_highscore($plugin->id(), $self->station(), $score);
+					}
+					$self->database()->unlock_global_highscore();
 				}
 			}
+			
+			# Check achievements
+			DEBUG "Checking achievements";
+			foreach my $plugin (@{$self->achievements()}) {
+				DEBUG "Processing " . ref($plugin);
+				$self->database()->init_achievement($plugin);
+				my $plugin_messages = $plugin->messages($self->database());
+				if (@$plugin_messages) {
+					push @messages, @$plugin_messages;
+					$self->database()->set_achievement_storage($plugin->id(), $plugin->storage());
+				}
+			}
+			
+			# Check notifications
+			DEBUG "Checking notifications";
+			foreach my $plugin (@{$self->notifications()}) {
+				DEBUG "Processing " . ref($plugin);
+				my $plugin_messages = $plugin->messages($self->database());
+				# TODO: manage storage from here... but don't load too many fields within perl
+				if (@$plugin_messages) {
+					push @messages, @$plugin_messages;
+				}			
+			}
+			
+			# Publish messages
+			if (scalar @messages > 0) {
+				DEBUG "Publish messages";
+				foreach my $message (@messages) {
+					next unless (defined $message);
+					foreach my $publisher (@{$self->{publishers}}) {
+						$publisher->publish($message);
+					}
+				}
+			}
 		}
-		
+
+		# Idle for a while
 		sleep($self->delay());
 	}	
 }

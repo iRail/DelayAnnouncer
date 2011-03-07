@@ -120,18 +120,26 @@ sub publish {
 		$message .= ' #' . $self->{hashtag};
 	}
 	
-	if (defined $self->latitude() && defined $self->longitude()) {
-		$self->twitter()->update({
-			status                  => $message,
-			long                    => $self->longitude(),
-			lat                     => $self->latitude(),
-			display_coordinates     => 1
-		});
-	} else {
-		$self->twitter()->update({
-			status                  => $message
-		});		
+	eval {
+		if (defined $self->latitude() && defined $self->longitude()) {
+			$self->twitter()->update({
+				status                  => $message,
+				long                    => $self->longitude(),
+				lat                     => $self->latitude(),
+				display_coordinates     => 1
+			});
+		} else {
+			$self->twitter()->update({
+				status                  => $message
+			});		
+		}
+	};
+	if ($@) {
+		WARN "Tweeting message failed";
+		WARN $@;
+		return undef;
 	}
+	return 1;
 }
 
 42;

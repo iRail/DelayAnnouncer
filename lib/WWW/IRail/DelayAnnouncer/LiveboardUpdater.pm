@@ -78,8 +78,15 @@ sub update {
 	LOGDIE "Could not fetch liveboard data"
 		unless($response->is_success);
 	
-	# TODO: dit mag niet crashen, gwn niet verer processen dan en aan dlay announcer laten weten
-	my $data = $self->json()->decode($response->decoded_content);
+	my $data;
+	eval {
+		$data = $self->json()->decode($response->decoded_content);
+	};
+	if ($@) {
+		WARN "Could not update the liveboard";
+		WARN $@;
+		return undef;
+	}
 	
 	my $timestamp = $data->{timestamp};
 	my $departures;
