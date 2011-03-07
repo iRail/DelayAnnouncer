@@ -132,6 +132,7 @@ sub run {
 	my ($self) = @_;
 	
 	DEBUG "Entering main loop";
+	my %plugin_highscores;
 	while (1) {
 		DEBUG "Updating liveboard";
 		$self->database()->add_liveboard($self->liveboardupdater()->update());
@@ -145,8 +146,21 @@ sub run {
 			next unless defined($score);
 			
 			if ($score > $self->database()->get_highscore($plugin->id())) {
-				push @messages, $plugin->message($self->station(), $score);
+				$plugin_highscores{$plugin->id()} = [ time, $plugin->message($self->station(), $score) ];
 				$self->database()->set_highscore($plugin->id(), $score);
+			}
+			foreach my $plugin (keys %plugin_highscores) {
+				my ($time, $message) = @{$plugin_highscores{$plugin}};
+				if (time - $time > 600) {	# Wait for the highscore to settle
+					push @messages, $message;
+					delete $plugin_highscores{$plugin};
+				} else {
+					DEBUG "Not publishing a message of "
+					. $plugin
+					. " due to not settled ("
+					. (time - $time)
+					. " seconds passed since publish)";
+				}
 			}
 			
 			unless ($self->standalone()) {
