@@ -80,7 +80,7 @@ sub messages {
 				DEBUG "Pushing message";
 				push @messages, 'delay all '
 					. NO("train", $stats[1])
-					. ' on platform'
+					. ' on platform '
 					. $platform;
 				$self->storage()->{$platform} = $stats[1];
 			}
