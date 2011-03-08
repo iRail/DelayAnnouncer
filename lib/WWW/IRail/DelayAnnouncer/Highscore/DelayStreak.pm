@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::ConsecutiveDelayed;
+package WWW::IRail::DelayAnnouncer::Highscore::DelayStreak;
 
 # Packages
 use Moose;
@@ -21,15 +21,14 @@ with 'WWW::IRail::DelayAnnouncer::Highscore';
 # Package information
 our $ENABLED = 1;
 
-# Delay messages
-my %DELAYS = (
-	2	=> "Double",
-	3	=> "Triple",
-	4	=> "Multi",
-	5	=> "Mega",
-	6	=> "Ultra",
-	7	=> "Monster",
-	8	=> "Ludicrous"
+# Streak messages
+my %STREAKS = (
+	10	=> '$station is on a Delay Spree',
+	20	=> '$station is Dominating',
+	30	=> '$station is on a Rampage',
+	40	=> '$station is Unstoppable',
+	50	=> '$station is Godlike',
+	65	=> '$station is Wicked sick'
 );
 
 
@@ -57,9 +56,9 @@ my %DELAYS = (
 sub calculate_score {
 	my ($self, $database) = @_;
 	
-	my @departures = $database->get_past_departures_consecutively_delayed();
+	my @departures = $database->get_departure_range(time-3600);
 	my $amount = (scalar @departures);
-	DEBUG "Amount of consecutively delayed trains: $amount";
+	DEBUG "Amount of delays in the past hour: $amount";
 	if ($amount > 1) {
 		return $amount;
 	} else {
@@ -69,16 +68,17 @@ sub calculate_score {
 
 sub message {
 	my ($self, $station, $score) = @_;
-	
-	if (defined $DELAYS{$score}) {
-		return "$station just scored a "
-			. $DELAYS{$score} . " Delay ("
-			. $score
-			. " in a row)";
+		
+	if (defined $STREAKS{$score}) {
+		my $streak = $STREAKS{$score};
+		$streak =~ s/\$station/$station/g;
+		return $streak . " ("
+			. NO("train", $score)
+			. " delayed)";
 	} else {
 		return "H O L Y  S H I T ("
-			. NO("delay", $score)
-			. " in a row)";
+			. NO("train", $score)
+			. " delays in a row)";
 	}
 }
 
@@ -86,9 +86,9 @@ sub global_message {
 	my ($self, $station, $previous_station, $score) = @_;
 	
 	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader of consecutive delays";		
+		return "$station just ousted $previous_station as leader of delay streaks";		
 	} else {
-		return "$station just became leader of consecutive delays";
+		return "$station just became leader of delay streaks";
 	}
 }
 
