@@ -167,7 +167,8 @@ sub run {
 						unless (defined $owner && $owner eq $self->station()) {
 							# Force a publish of a queue'd highscore message as well
 							if (defined $plugin_highscores{$plugin->id()}) {
-								push @messages, $plugin_highscores{$plugin->id()};
+								my ($time, $message) = @{$plugin_highscores{$plugin->id()}};
+								push @messages, $message;
 								delete $plugin_highscores{$plugin->id()};
 							}							
 							push @messages, $plugin->global_message($self->station(), $owner, $score);
