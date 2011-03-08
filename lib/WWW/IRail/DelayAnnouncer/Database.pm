@@ -391,8 +391,6 @@ END
 	
 	my $result = $sth->fetchrow_arrayref;
 	if ($result) {
-		use Data::Dumper;
-		print "returning " . Dumper($result);	
 		return @$result;
 	} else {
 		return (0, 0, 0);
