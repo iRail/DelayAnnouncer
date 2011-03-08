@@ -21,6 +21,17 @@ with 'WWW::IRail::DelayAnnouncer::Highscore';
 # Package information
 our $ENABLED = 1;
 
+# Delay messages
+my %DELAYS = (
+	2	=> "Double",
+	3	=> "Triple",
+	4	=> "Multi",
+	5	=> "Mega",
+	6	=> "Ultra",
+	7	=> "Monster",
+	8	=> "Ludicrous"
+);
+
 
 ################################################################################
 # Attributes
@@ -59,9 +70,15 @@ sub calculate_score {
 sub message {
 	my ($self, $station, $score) = @_;
 	
-	return "$station just managed to delay "
-		. NO("train", $score)
-		. " in a row";
+	if (defined $DELAYS{$score}) {
+		return $DELAYS{$score} . " delay ("
+			. NO("train", $score)
+			. " in a row)";
+	} else {
+		return "H O L Y  S H * T ("
+			. NO("train", $score)
+			. " delays in a row)";
+	}
 }
 
 sub global_message {
