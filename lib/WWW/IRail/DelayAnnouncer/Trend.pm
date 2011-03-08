@@ -56,6 +56,8 @@ around 'message' => sub {
 	return $message;
 };
 
+requires 'expiry';
+
 
 42;
 

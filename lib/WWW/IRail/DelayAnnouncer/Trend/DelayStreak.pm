@@ -55,6 +55,10 @@ my @MESSAGES = (
 
 =cut
 
+sub expiry {
+	return 3600 * 6;
+}
+
 sub calculate_score {
 	my ($self, $database) = @_;
 	

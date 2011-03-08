@@ -244,7 +244,7 @@ sub run {
 				if ($score > $previous) {
 					DEBUG "Trend value increased";
 					# Check trend
-					if ($score > $high_score || (time-$high_time) > 3600) {
+					if ($score > $high_score || (time-$high_time) > $plugin->expiry()) {
 						DEBUG "Trend highscore breached or expired, publishing message";
 						push @messages, $plugin->message($self->station(), $score);
 						$high_time = time;
