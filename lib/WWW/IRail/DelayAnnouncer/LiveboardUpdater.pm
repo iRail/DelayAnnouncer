@@ -75,8 +75,11 @@ sub update {
 	my ($self) = @_;
 	
 	my $response = $self->ua()->get($self->url());
-	LOGDIE "Could not fetch liveboard data"
-		unless($response->is_success);
+	unless($response->is_success) {
+		WARN "Could not fetch liveboard data";
+		WARN $response->status_line;
+		return undef;
+	}
 	
 	my $data;
 	eval {
