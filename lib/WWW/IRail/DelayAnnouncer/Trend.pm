@@ -51,7 +51,7 @@ around 'message' => sub {
 	my $self = shift;
 	
 	my $message = $self->$orig(@_);
-	$message = "New highscore: $message!";
+	$message = "$message!";
 	
 	return $message;
 };
