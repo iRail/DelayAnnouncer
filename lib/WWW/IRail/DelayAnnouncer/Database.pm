@@ -133,6 +133,19 @@ CREATE TABLE $self->{prefix}_notifications (
 END
 	);
 	$sth->execute();
+	
+	# Trend table
+	$sth = $self->dbd()->prepare(<<END
+CREATE TABLE $self->{prefix}_trends (
+	id TEXT PRIMARY KEY,
+	timestamp INTEGER,
+	score INTEGER,
+	high_time INTEGER,
+	high_score INTEGER
+)	
+END
+	);
+	$sth->execute();
 }
 
 sub create_shared {
@@ -361,6 +374,48 @@ END
 	
 	$sth->execute();
 	
+}
+
+sub get_trend {
+	my ($self, $plugin) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT score, high_time, high_score
+FROM $self->{prefix}_trends
+WHERE id == ?
+END
+	);
+	
+	$sth->bind_param(1, $plugin);	
+	$sth->execute();
+	
+	my $result = $sth->fetchrow_arrayref;
+	if ($result) {
+		use Data::Dumper;
+		print "returning " . Dumper($result);	
+		return @$result;
+	} else {
+		return (0, 0, 0);
+	}	
+}
+
+sub set_trend {
+	my ($self, $plugin, $score, $high_time, $high_score) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+INSERT OR REPLACE
+INTO $self->{prefix}_trends
+(id, timestamp, score, high_time, high_score)
+VALUES (?, ?, ?, ?, ?)
+END
+	);
+	
+	$sth->bind_param(1, $plugin);
+	$sth->bind_param(2, time);
+	$sth->bind_param(3, $score);
+	$sth->bind_param(4, $high_time);
+	$sth->bind_param(5, $high_score);
+	$sth->execute();
 }
 
 sub get_departure_range {

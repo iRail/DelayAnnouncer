@@ -105,6 +105,20 @@ sub _build_notifications {
 		@objects];
 }
 
+has 'trends' => (
+	is		=> 'ro',
+	isa		=> 'ArrayRef',
+	builder		=> '_build_trends'
+);
+
+sub _build_trends {
+	my %plugins = discover('WWW::IRail::DelayAnnouncer::Trend')
+		or LOGDIE "Error discovering trend plugins: $!";
+	my @objects = @{instantiate(\%plugins, undef)};
+	return [grep { eval('$' . ref($_) . '::ENABLED || 0') }
+		@objects];
+}
+
 
 ################################################################################
 # Methods
@@ -213,6 +227,33 @@ sub run {
 				if (@$plugin_messages) {
 					push @messages, @$plugin_messages;
 				}			
+			}
+			
+			# Check trends
+			DEBUG "Checking trends";
+			foreach my $plugin (@{$self->trends()}) {
+				DEBUG "Processing " . ref($plugin);
+				my $score = $plugin->calculate_score($self->database());				
+				next unless defined($score);
+				DEBUG "Current trend value: $score";
+				
+				# Check score
+				my ($previous, $high_time, $high_score) = $self->database()->get_trend($plugin->id());
+				DEBUG "Previous trend value: $previous";
+				DEBUG "High trend value: $high_score (hit " . (time-$high_time) . " seconds ago)";				
+				if ($score > $previous) {
+					DEBUG "Trend value increased";
+					# Check trend
+					if ($score > $high_score || (time-$high_time) > 3600) {
+						DEBUG "Trend highscore breached or expired, publishing message";
+						push @messages, $plugin->message($self->station(), $score);
+						$high_time = time;
+						$high_score = $score;
+					} else {
+						DEBUG "Trend value didn't increase highscore, which hasn't expired yet";
+					}
+				}
+				$self->database()->set_trend($plugin->id(), $score, $high_time, $high_score);
 			}
 			
 			# Publish messages
