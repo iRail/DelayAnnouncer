@@ -75,6 +75,11 @@ sub messages {
 		return [];
 	}
 	
+	# Workaround for a bug in the API
+	if ($window > 720) {
+		return undef;
+	}
+	
 	# Check
 	DEBUG "Stored window " . $self->storage()->{window};
 	if ($window > ($self->storage()->{window} + 5)) {
