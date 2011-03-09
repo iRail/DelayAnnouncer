@@ -31,6 +31,12 @@ has 'uri' => (
 	required	=> 1
 );
 
+has [qw/username password/] => (
+	is		=> 'ro',
+	isa		=> 'Str',
+	default		=> ''
+);
+
 has 'prefix' => (
 	is		=> 'ro',
 	isa		=> 'Str',
@@ -47,7 +53,7 @@ has 'dbd' => (
 sub _build_dbd {
 	my ($self) = @_;
 	
-	my $dbd = DBIx::Log4perl->connect($self->uri(), '', '', {
+	my $dbd = DBIx::Log4perl->connect($self->uri(), $self->username(), $self->password(), {
 		RaiseError	=> 1,
 		PrintError	=> 0,
 		AutoCommit	=> 1
@@ -99,9 +105,10 @@ END
 	# Highscore table
 	$sth = $self->dbd()->prepare(<<END
 CREATE TABLE $self->{prefix}_highscores (
-	id TEXT PRIMARY KEY,
+	id TEXT,
 	timestamp INTEGER,
-	score INTEGER	
+	score INTEGER,
+	PRIMARY KEY(id(10))
 )	
 END
 	);
@@ -112,9 +119,9 @@ END
 CREATE TABLE $self->{prefix}_achievements (
 	id TEXT,
 	timestamp INTEGER,
-	key TEXT,
+	entry TEXT,
 	value TEXT,
-	PRIMARY KEY (id, key)
+	PRIMARY KEY (id(10), entry(10))
 )	
 END
 	);
@@ -125,10 +132,10 @@ END
 CREATE TABLE $self->{prefix}_notifications (
 	id TEXT,
 	timestamp INTEGER,
-	station INTEGER,
+	station TEXT,
 	time INTEGER,
 	data TEXT,
-	PRIMARY KEY (id, station, time)
+	PRIMARY KEY (id(10), station(10), time)
 )	
 END
 	);
@@ -137,11 +144,12 @@ END
 	# Trend table
 	$sth = $self->dbd()->prepare(<<END
 CREATE TABLE $self->{prefix}_trends (
-	id TEXT PRIMARY KEY,
+	id TEXT,
 	timestamp INTEGER,
 	score INTEGER,
 	high_time INTEGER,
-	high_score INTEGER
+	high_score INTEGER,
+	PRIMARY KEY(id(10))
 )	
 END
 	);
@@ -154,10 +162,11 @@ sub create_shared {
 	# Highscore table
 	my $sth = $self->dbd()->prepare(<<END
 CREATE TABLE highscores (
-	id TEXT PRIMARY KEY,
+	id TEXT,
 	timestamp INTEGER,
 	owner TEXT,
-	score INTEGER	
+	score INTEGER,
+	PRIMARY KEY(id(10))
 )	
 END
 	);
@@ -200,7 +209,7 @@ sub get_highscore {
 	my $sth = $self->dbd()->prepare(<<END
 SELECT score
 FROM $self->{prefix}_highscores
-WHERE id == ?
+WHERE id = ?
 END
 	);
 	
@@ -219,8 +228,7 @@ sub set_highscore {
 	my ($self, $plugin, $score) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-INSERT OR REPLACE
-INTO $self->{prefix}_highscores
+REPLACE INTO $self->{prefix}_highscores
 (id, timestamp, score)
 VALUES (?, ?, ?)
 END
@@ -238,7 +246,7 @@ sub get_global_highscore {
 	my $sth = $self->dbd()->prepare(<<END
 SELECT owner, score
 FROM highscores
-WHERE id == ?
+WHERE id = ?
 END
 	);
 	
@@ -265,8 +273,7 @@ sub set_global_highscore {
 	my ($self, $plugin, $owner, $score) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-INSERT OR REPLACE
-INTO highscores
+REPLACE INTO highscores
 (id, timestamp, owner, score)
 VALUES (?, ?, ?, ?)
 END
@@ -297,9 +304,9 @@ sub get_achievement_storage {
 	my ($self, $plugin) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-SELECT key, value
+SELECT entry, value
 FROM $self->{prefix}_achievements
-WHERE id == ?
+WHERE id = ?
 END
 	);
 	
@@ -316,9 +323,8 @@ sub set_achievement_storage {
 	my ($self, $plugin, $storage) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-INSERT OR REPLACE
-INTO $self->{prefix}_achievements
-(id, timestamp, key, value)
+REPLACE INTO $self->{prefix}_achievements
+(id, timestamp, entry, value)
 VALUES (?, ?, ?, ?)
 END
 	);
@@ -338,7 +344,7 @@ sub get_notification_data {
 	my $sth = $self->dbd()->prepare(<<END
 SELECT data
 FROM $self->{prefix}_notifications
-WHERE id == ? AND station == ? AND time == ?
+WHERE id = ? AND station = ? AND time = ?
 END
 	);
 	
@@ -359,8 +365,7 @@ sub set_notification_data {
 	my ($self, $plugin, $station, $time, $data) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-INSERT OR REPLACE
-INTO $self->{prefix}_notifications
+REPLACE INTO $self->{prefix}_notifications
 (id, timestamp, station, time, data)
 VALUES (?, ?, ?, ?, ?)
 END
@@ -382,7 +387,7 @@ sub get_trend {
 	my $sth = $self->dbd()->prepare(<<END
 SELECT score, high_time, high_score
 FROM $self->{prefix}_trends
-WHERE id == ?
+WHERE id = ?
 END
 	);
 	
@@ -401,8 +406,7 @@ sub set_trend {
 	my ($self, $plugin, $score, $high_time, $high_score) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-INSERT OR REPLACE
-INTO $self->{prefix}_trends
+REPLACE INTO $self->{prefix}_trends
 (id, timestamp, score, high_time, high_score)
 VALUES (?, ?, ?, ?, ?)
 END
@@ -465,14 +469,15 @@ sub get_past_departures {
 	my $sth = $self->dbd()->prepare(<<END
 SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
 FROM $self->{prefix}_liveboard
-WHERE time < strftime('%s')
+WHERE time < ?
 GROUP BY vehicle, time
 ORDER BY time desc
 LIMIT ?
 END
 	);
 	
-	$sth->bind_param(1, $amount);
+	$sth->bind_param(1, time);
+	$sth->bind_param(2, $amount);
 	$sth->execute();
 	
 	my $result = $sth->fetchall_arrayref;
@@ -487,7 +492,7 @@ sub get_past_departures_to {
 	my $sth = $self->dbd()->prepare(<<END
 SELECT vehicle, max(delay) AS maxdelay, max(platform), time
 FROM $self->{prefix}_liveboard
-WHERE station == ?
+WHERE station = ?
 WHERE time < strftime('%s')
 GROUP BY vehicle, time
 ORDER BY time desc
@@ -496,7 +501,8 @@ END
 	);
 	
 	$sth->bind_param(1, $station);
-	$sth->bind_param(2, $amount);
+	$sth->bind_param(2, time);
+	$sth->bind_param(3, $amount);
 	$sth->execute();
 	
 	my $result = $sth->fetchall_arrayref;
@@ -530,16 +536,18 @@ FROM $self->{prefix}_liveboard
 WHERE time BETWEEN (
 	SELECT time
 	FROM $self->{prefix}_liveboard
-	WHERE time < strftime('%s')
+	WHERE time < ?
 	GROUP BY vehicle, time
-	HAVING max(delay) == 0
+	HAVING max(delay) = 0
 	ORDER BY time DESC
 	LIMIT 1
-) AND strftime('%s')
+) AND ?
 GROUP BY vehicle, time
 END
 	);
 	
+	$sth->bind_param(1, time);
+	$sth->bind_param(2, time);
 	$sth->execute();
 	
 	my $result = $sth->fetchall_arrayref;
