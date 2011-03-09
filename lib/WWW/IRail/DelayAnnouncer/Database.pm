@@ -90,7 +90,7 @@ sub create {
 	
 	# Liveboard table
 	my $sth = $self->dbd()->prepare(<<END
-CREATE TABLE $self->{prefix}_liveboard (
+CREATE TABLE $self->{prefix}_liveboards (
 	timestamp INTEGER,
 	station TEXT,
 	vehicle TEXT,
@@ -188,7 +188,7 @@ sub add_liveboard {
 	$self->{current_liveboard} = $liveboard;
 	
 	my $sth = $self->dbd()->prepare(<<END
-INSERT INTO $self->{prefix}_liveboard (timestamp, station, vehicle, delay, platform, time)
+INSERT INTO $self->{prefix}_liveboards (timestamp, station, vehicle, delay, platform, time)
 VALUES (?, ?, ?, ?, ?, ?)
 END
 	);
@@ -426,7 +426,7 @@ sub get_departure_range {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
-FROM $self->{prefix}_liveboard
+FROM $self->{prefix}_liveboards
 WHERE timestamp BETWEEN ? AND ?
 GROUP BY vehicle, time
 END
@@ -447,7 +447,7 @@ sub get_earliest_departure {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT station, vehicle, delay, platform, time
-FROM $self->{prefix}_liveboard
+FROM $self->{prefix}_liveboards
 ORDER BY timestamp ASC, time ASC
 LIMIT 1
 END
@@ -468,7 +468,7 @@ sub get_past_departures {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
-FROM $self->{prefix}_liveboard
+FROM $self->{prefix}_liveboards
 WHERE time < ?
 GROUP BY vehicle, time
 ORDER BY time desc
@@ -491,7 +491,7 @@ sub get_past_departures_to {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT vehicle, max(delay) AS maxdelay, max(platform), time
-FROM $self->{prefix}_liveboard
+FROM $self->{prefix}_liveboards
 WHERE station = ?
 WHERE time < strftime('%s')
 GROUP BY vehicle, time
@@ -516,7 +516,7 @@ sub get_unique_destinations {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT station
-FROM $self->{prefix}_liveboard
+FROM $self->{prefix}_liveboards
 GROUP BY station
 END
 	);
@@ -532,10 +532,10 @@ sub get_past_departures_consecutively_delayed {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
-FROM $self->{prefix}_liveboard
+FROM $self->{prefix}_liveboards
 WHERE time BETWEEN (
 	SELECT time
-	FROM $self->{prefix}_liveboard
+	FROM $self->{prefix}_liveboards
 	WHERE time < ?
 	GROUP BY vehicle, time
 	HAVING max(delay) = 0
