@@ -29,8 +29,8 @@ my @MESSAGES = (
 	'$station just scored a Multi Delay',
 	'$station just scored a Mega Delay',
 	'$station just scored a Ultra Delay',
-	'$station just scored a Monster Delay',
-	'$station just scored a Ludicrous Delay',
+	'$station just scored a M-M-M-M-Monster Delay',
+	'$station just scored a LUDICROUS Delay',
 	'H O L Y  S H I T'
 );
 
