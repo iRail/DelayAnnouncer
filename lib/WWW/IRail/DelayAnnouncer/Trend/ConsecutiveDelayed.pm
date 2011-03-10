@@ -68,7 +68,7 @@ sub calculate_score {
 	DEBUG "Amount of consecutively delayed trains: $amount";
 	
 	my $category = 0;
-	while ($amount > $CATEGORIES[$category] && $category != scalar @CATEGORIES) {
+	while ($amount >= $CATEGORIES[$category] && $category != scalar @CATEGORIES) {
 		$category++;
 	}
 	DEBUG "Score category: $category";

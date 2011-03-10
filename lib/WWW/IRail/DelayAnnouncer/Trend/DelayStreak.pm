@@ -68,7 +68,7 @@ sub calculate_score {
 	DEBUG "Amount of delays in the past hour: $delayed (on a total of $amount)";
 	
 	my $category = 0;
-	while ($delayed > $CATEGORIES[$category] && $category != scalar @CATEGORIES) {
+	while ($delayed >= $CATEGORIES[$category] && $category != scalar @CATEGORIES) {
 		$category++;
 	}
 	DEBUG "Score category: $category";
