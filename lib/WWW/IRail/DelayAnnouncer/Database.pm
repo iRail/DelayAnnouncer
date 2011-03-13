@@ -533,7 +533,7 @@ sub get_past_departures_consecutively_delayed {
 	my $sth = $self->dbd()->prepare(<<END
 SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
 FROM $self->{prefix}_liveboards
-WHERE time BETWEEN (
+WHERE time > (
 	SELECT time
 	FROM $self->{prefix}_liveboards
 	WHERE time < ?
@@ -541,8 +541,9 @@ WHERE time BETWEEN (
 	HAVING max(delay) = 0
 	ORDER BY time DESC
 	LIMIT 1
-) AND ?
+) AND time <= ?
 GROUP BY vehicle, time
+HAVING max(delay) > 0
 END
 	);
 	
