@@ -92,12 +92,7 @@ sub update {
 	}
 	
 	my $timestamp = $data->{timestamp};
-	my $departures;
-	if ($data->{departures}->{number} == 1) {				# WORKAROUND
-		$departures = [ $data->{departures}{departure} ];		# WORKAROUND
-	} else {								# WORKAROUND
-		$departures = $data->{departures}{departure};
-	}
+	my $departures = $data->{departures}{departure};
 	
 	foreach my $departure (@{$departures}) {
 		my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($departure->{time});
