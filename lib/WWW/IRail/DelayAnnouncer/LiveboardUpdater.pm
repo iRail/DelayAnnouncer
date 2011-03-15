@@ -48,7 +48,7 @@ has 'json' => (
 has 'ua' => (
 	is		=> 'ro',
 	isa		=> 'LWP::UserAgent',
-	default		=> sub { new LWP::UserAgent(agent => 'irail-delayannouner') }
+	default		=> sub { new LWP::UserAgent(agent => 'irail-delayannoucner') }
 );
 
 
