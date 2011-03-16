@@ -49,7 +49,7 @@ has 'publishers' => (
 has 'delay' => (
 	is		=> 'ro',
 	isa		=> 'Int',
-	default		=> 60
+	default		=> 120
 );
 
 has 'liveboardupdater' => (
