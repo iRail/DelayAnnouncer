@@ -101,7 +101,7 @@ sub update {
 			. " to " . $departure->{station}
 			. ", on platform "
 			. $departure->{platform};
-		if ($departure->{platform} eq "NA") {
+		if ($departure->{platform} eq "") {
 			$departure->{platform} = undef;
 		}
 	}
