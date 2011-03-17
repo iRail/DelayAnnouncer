@@ -150,7 +150,14 @@ sub run {
 	while (1) {
 		DEBUG "Updating liveboard";
 		my $liveboard = $self->liveboardupdater()->update();
-		if (defined $liveboard) {
+		if (	defined $liveboard
+			&& (
+				!defined $self->database->current_liveboard()
+				||
+				$liveboard->timestamp() != $self->database->current_liveboard()->timestamp()
+			   )
+			)
+		{
 			$self->database()->add_liveboard($liveboard);
 			my @messages;
 			
