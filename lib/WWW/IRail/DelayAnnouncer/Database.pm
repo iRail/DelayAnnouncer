@@ -428,7 +428,7 @@ sub get_departure_range {
 SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
 FROM $self->{prefix}_liveboards
 WHERE timestamp BETWEEN ? AND ?
-GROUP BY vehicle, time
+GROUP BY time, vehicle
 END
 	);
 	
@@ -470,7 +470,7 @@ sub get_past_departures {
 SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
 FROM $self->{prefix}_liveboards
 WHERE time < ?
-GROUP BY vehicle, time
+GROUP BY time, vehicle
 ORDER BY time desc
 LIMIT ?
 END
@@ -494,7 +494,7 @@ SELECT vehicle, max(delay) AS maxdelay, max(platform), time
 FROM $self->{prefix}_liveboards
 WHERE station = ?
 WHERE time < strftime('%s')
-GROUP BY vehicle, time
+GROUP BY time, vehicle
 ORDER BY time desc
 LIMIT ?
 END
@@ -537,12 +537,12 @@ WHERE time > (
 	SELECT time
 	FROM $self->{prefix}_liveboards
 	WHERE time < ?
-	GROUP BY vehicle, time
+	GROUP BY time, vehicle
 	HAVING max(delay) = 0
 	ORDER BY time DESC
 	LIMIT 1
 ) AND time <= ?
-GROUP BY vehicle, time
+GROUP BY time, vehicle
 HAVING max(delay) > 0
 END
 	);
