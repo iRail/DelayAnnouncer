@@ -90,14 +90,16 @@ sub create {
 	
 	# Liveboard table
 	my $sth = $self->dbd()->prepare(<<END
-CREATE TABLE $self->{prefix}_liveboards (
-	timestamp INTEGER,
-	station TEXT,
-	vehicle TEXT,
-	delay INTEGER,
-	platform INTEGER,
-	time INTEGER
-)	
+CREATE TABLE IF NOT EXISTS $self->{prefix}_liveboards (
+	`timestamp` int(11) NOT NULL,
+	station varchar(40) DEFAULT NULL,
+	vehicle varchar(20) NOT NULL,
+	delay int(11) DEFAULT NULL,
+	platform int(11) DEFAULT NULL,
+	`time` int(11) NOT NULL,
+	PRIMARY KEY (`time`,vehicle,`timestamp`),
+	KEY `timestamp` (`timestamp`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;	
 END
 	);
 	$sth->execute();
