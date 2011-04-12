@@ -612,8 +612,7 @@ WHERE time > (
 	WHERE time < ? AND delay = 0
 	ORDER BY time DESC
 	LIMIT 1
-) AND time <= ?
-WHERE delay > 0
+) AND time <= ? AND delay > 0
 END
 	);
 	
