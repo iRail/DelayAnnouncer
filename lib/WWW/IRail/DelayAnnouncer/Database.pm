@@ -62,10 +62,47 @@ sub _build_dbd {
 	return $dbd;
 }
 
-has [qw(current_liveboard previous_liveboard)] => (
+has 'current_liveboard' => (
+	is		=> 'ro',
+	isa		=> 'WWW::IRail::DelayAnnouncer::Liveboard',
+	builder		=> '_build_current_liveboard',
+	lazy		=> 1
+);
+
+has 'previous_liveboard' => (
 	is		=> 'ro',
 	isa		=> 'WWW::IRail::DelayAnnouncer::Liveboard'
 );
+
+sub _build_current_liveboard {
+	my ($self) = @_;
+	
+	my $sth = $self->dbd()->prepare(<<END
+SELECT *
+FROM $self->{prefix}_liveboards
+WHERE timestamp = (
+	SELECT max(timestamp)
+	FROM $self->{prefix}_liveboards
+)
+END
+	);
+	
+	$sth->execute();
+	
+	my @departures, $timestamp;
+	while (my $row = $sth->fetchrow_hashref) {
+		$timestamp = $row->{timestamp};
+		push @departures, _construct_departure(%$row);
+	}
+	if (@departures) {
+		return new Liveboard(
+			timestamp	=> $timestamp,
+			departures	=> \@departures
+		);
+	} else {
+		return undef;
+	}
+}
 
 
 ################################################################################
@@ -83,6 +120,7 @@ sub BUILD {
 	
 	# Build lazy attributes
 	$self->dbd();
+	$self->current_liveboard();
 }
 
 sub create {
@@ -438,9 +476,10 @@ END
 	$sth->bind_param(2, $end);
 	$sth->execute();
 	
-	my $result = $sth->fetchall_arrayref;
-	my @departures = map { _construct_departure(@{$_}) }
-		@{$result};
+	my @departures;
+	while (my $row = $sth->fetchrow_hashref) {
+		push @departures, _construct_departure(%$row);
+	}
 	return @departures;
 }
 
@@ -457,9 +496,9 @@ END
 	
 	$sth->execute();
 	
-	my $result = $sth->fetchrow_arrayref;
+	my $result = $sth->fetchrow_hashref;
 	if ($result) {
-		return _construct_departure(@{$result});
+		return _construct_departure(%$result);
 	} else {
 		return undef;
 	}
@@ -482,10 +521,11 @@ END
 	$sth->bind_param(2, $amount);
 	$sth->execute();
 	
-	my $result = $sth->fetchall_arrayref;
-	my @departures = map { _construct_departure(@{$_}) }
-		@{$result};
-	return @departures;	
+	my @departures;
+	while (my $row = $sth->fetchrow_hashref) {
+		push @departures, _construct_departure(%$row);
+	}
+	return @departures;
 }
 
 sub get_past_departures_to {
@@ -507,9 +547,10 @@ END
 	$sth->bind_param(3, $amount);
 	$sth->execute();
 	
-	my $result = $sth->fetchall_arrayref;
-	my @departures = map { _construct_departure($station, @{$_}) }
-		@{$result};
+	my @departures;
+	while (my $row = $sth->fetchrow_hashref) {
+		push @departures, _construct_departure(station => $station, %$row);
+	}
 	return @departures;
 }
 
@@ -553,10 +594,11 @@ END
 	$sth->bind_param(2, time);
 	$sth->execute();
 	
-	my $result = $sth->fetchall_arrayref;
-	my @departures = map { _construct_departure(@{$_}) }
-		@{$result};
-	return @departures;	
+	my @departures;
+	while (my $row = $sth->fetchrow_hashref) {
+		push @departures, _construct_departure(%$row);
+	}
+	return @departures;
 }
 
 ################################################################################
@@ -570,12 +612,13 @@ END
 =cut
 
 sub _construct_departure {
+	my %row = @_;
 	return {
-		station		=> $_[0],
-		vehicle		=> $_[1],
-		delay		=> $_[2],
-		platform	=> $_[3],
-		time		=> $_[4]
+		station		=> $row{'station'},
+		vehicle		=> $row{'vehicle'},
+		delay		=> $row{'delay'},
+		platform	=> $row{'platform'},
+		time		=> $row{'time'}
 	};
 }
 
