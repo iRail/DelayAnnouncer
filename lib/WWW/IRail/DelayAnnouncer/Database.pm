@@ -95,7 +95,7 @@ END
 		push @departures, _construct_departure(%$row);
 	}
 	if (@departures) {
-		return new Liveboard(
+		return new WWW::IRail::DelayAnnouncer::Liveboard(
 			timestamp	=> $timestamp,
 			departures	=> \@departures
 		);
