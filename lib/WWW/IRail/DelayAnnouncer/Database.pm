@@ -498,10 +498,9 @@ sub get_departure_range {
 	$end = time unless (defined $end);
 	
 	my $sth = $self->dbd()->prepare(<<END
-SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
-FROM $self->{prefix}_liveboards
-WHERE timestamp BETWEEN ? AND ?
-GROUP BY time, vehicle
+SELECT station, vehicle, delay, platform, time
+FROM $self->{prefix}_departures
+WHERE time BETWEEN ? AND ?
 END
 	);
 	
@@ -521,8 +520,8 @@ sub get_earliest_departure {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT station, vehicle, delay, platform, time
-FROM $self->{prefix}_liveboards
-ORDER BY timestamp ASC, time ASC
+FROM $self->{prefix}_departures
+ORDER BY time ASC
 LIMIT 1
 END
 	);
@@ -541,10 +540,9 @@ sub get_past_departures {
 	my ($self, $amount) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
-FROM $self->{prefix}_liveboards
+SELECT station, vehicle, delay, platform, time
+FROM $self->{prefix}_departures
 WHERE time < ?
-GROUP BY time, vehicle
 ORDER BY time desc
 LIMIT ?
 END
@@ -565,11 +563,10 @@ sub get_past_departures_to {
 	my ($self, $station, $amount) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-SELECT vehicle, max(delay) AS maxdelay, max(platform), time
-FROM $self->{prefix}_liveboards
+SELECT vehicle, delay, platform, time
+FROM $self->{prefix}_departures
 WHERE station = ?
 WHERE time < strftime('%s')
-GROUP BY time, vehicle
 ORDER BY time desc
 LIMIT ?
 END
@@ -592,7 +589,7 @@ sub get_unique_destinations {
 	
 	my $sth = $self->dbd()->prepare(<<END
 SELECT station
-FROM $self->{prefix}_liveboards
+FROM $self->{prefix}_departures
 GROUP BY station
 END
 	);
@@ -607,19 +604,16 @@ sub get_past_departures_consecutively_delayed {
 	my ($self, $station, $amount) = @_;
 	
 	my $sth = $self->dbd()->prepare(<<END
-SELECT max(station), vehicle, max(delay) AS maxdelay, max(platform), time
-FROM $self->{prefix}_liveboards
+SELECT station, vehicle, delay, platform, time
+FROM $self->{prefix}_departures
 WHERE time > (
 	SELECT time
-	FROM $self->{prefix}_liveboards
-	WHERE time < ?
-	GROUP BY time, vehicle
-	HAVING max(delay) = 0
+	FROM $self->{prefix}_departures
+	WHERE time < ? AND delay = 0
 	ORDER BY time DESC
 	LIMIT 1
 ) AND time <= ?
-GROUP BY time, vehicle
-HAVING max(delay) > 0
+WHERE delay > 0
 END
 	);
 	
