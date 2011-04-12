@@ -262,7 +262,7 @@ END
 REPLACE INTO $self->{prefix}_departures
 SELECT liveboard.station,
        liveboard.vehicle,
-       GREATEST(liveboard.delay, departure.delay),
+       GREATEST(liveboard.delay, COALESCE(departure.delay, 0)),
        liveboard.platform,
        liveboard.time
 FROM $self->{prefix}_liveboards liveboard
