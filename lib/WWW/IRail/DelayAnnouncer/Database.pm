@@ -89,7 +89,7 @@ END
 	
 	$sth->execute();
 	
-	my @departures, $timestamp;
+	my (@departures, $timestamp);
 	while (my $row = $sth->fetchrow_hashref) {
 		$timestamp = $row->{timestamp};
 		push @departures, _construct_departure(%$row);
@@ -142,9 +142,24 @@ END
 	);
 	$sth->execute();
 	
+	# Departure table
+	$sth = $self->dbd()->prepare(<<END
+CREATE TABLE IF NOT EXISTS $self->{prefix}_departures (
+	station varchar(40) DEFAULT NULL,
+	vehicle varchar(20) NOT NULL,
+	delay int(11) DEFAULT NULL,
+	platform int(11) DEFAULT NULL,
+	`time` int(11) NOT NULL,
+	PRIMARY KEY (`time`,vehicle)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;	
+END
+	);
+	$sth->execute();
+	
+	
 	# Highscore table
 	$sth = $self->dbd()->prepare(<<END
-CREATE TABLE $self->{prefix}_highscores (
+CREATE TABLE IF NOT EXISTS $self->{prefix}_highscores (
 	id TEXT,
 	timestamp INTEGER,
 	score INTEGER,
@@ -156,7 +171,7 @@ END
 	
 	# Achievement table
 	$sth = $self->dbd()->prepare(<<END
-CREATE TABLE $self->{prefix}_achievements (
+CREATE TABLE IF NOT EXISTS $self->{prefix}_achievements (
 	id TEXT,
 	timestamp INTEGER,
 	entry TEXT,
@@ -169,7 +184,7 @@ END
 	
 	# Notification table
 	$sth = $self->dbd()->prepare(<<END
-CREATE TABLE $self->{prefix}_notifications (
+CREATE TABLE IF NOT EXISTS $self->{prefix}_notifications (
 	id TEXT,
 	timestamp INTEGER,
 	station TEXT,
@@ -183,7 +198,7 @@ END
 	
 	# Trend table
 	$sth = $self->dbd()->prepare(<<END
-CREATE TABLE $self->{prefix}_trends (
+CREATE TABLE IF NOT EXISTS $self->{prefix}_trends (
 	id TEXT,
 	timestamp INTEGER,
 	score INTEGER,
@@ -201,7 +216,7 @@ sub create_shared {
 	
 	# Highscore table
 	my $sth = $self->dbd()->prepare(<<END
-CREATE TABLE highscores (
+CREATE TABLE IF NOT EXISTS highscores (
 	id TEXT,
 	timestamp INTEGER,
 	owner TEXT,
@@ -224,22 +239,40 @@ sub close {
 sub add_liveboard {
 	my ($self, $liveboard) = @_;
 	
+	# Save liveboard locally
 	$self->{previous_liveboard} = $self->{current_liveboard};
 	$self->{current_liveboard} = $liveboard;
 	
+	# Put data in liveboards table
 	my $sth = $self->dbd()->prepare(<<END
 INSERT INTO $self->{prefix}_liveboards (timestamp, station, vehicle, delay, platform, time)
 VALUES (?, ?, ?, ?, ?, ?)
 END
-	);
-	
+	);	
 	$sth->bind_param_array(1, $liveboard->timestamp());
 	$sth->bind_param_array(2, [map { $_->{station} } @{$liveboard->departures()}]);
 	$sth->bind_param_array(3, [map { $_->{vehicle} } @{$liveboard->departures()}]);
 	$sth->bind_param_array(4, [map { $_->{delay} } @{$liveboard->departures()}]);
 	$sth->bind_param_array(5, [map { $_->{platform} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(6, [map { $_->{time} } @{$liveboard->departures()}]);
+	$sth->bind_param_array(6, [map { $_->{time} } @{$liveboard->departures()}]);	
+	$sth->execute_array( {} );
 	
+	# Put or update data in departures table
+	$sth = $self->dbd()->prepare(<<END
+REPLACE INTO $self->{prefix}_departures
+SELECT liveboard.station,
+       liveboard.vehicle,
+       GREATEST(liveboard.delay, departure.delay),
+       liveboard.platform,
+       liveboard.time
+FROM $self->{prefix}_liveboards liveboard
+LEFT JOIN $self->{prefix}_departures departure
+	  ON liveboard.time = departure.time
+	     AND liveboard.vehicle = departure.vehicle
+WHERE timestamp = ?
+END
+	);
+	$sth->bind_param_array(1, $liveboard->timestamp());
 	$sth->execute_array( {} );
 }
 
