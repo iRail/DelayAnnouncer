@@ -50,8 +50,8 @@ use Config::Tiny;
 use Getopt::Long;
 use Pod::Usage;
 use WWW::IRail::DelayAnnouncer;
-use WWW::IRail::DelayAnnouncer::Database;
-use WWW::IRail::DelayAnnouncer::Auxiliary qw/discover instantiate/;
+use WWW::IRail::Harvester;
+use DBIx::Log4perl;
 use Log::Log4perl qw(:easy);
 
 # Initial logging
@@ -63,7 +63,7 @@ $SIG{TERM} = "quit";
 
 
 ###############################################################################
-# Main
+# Initialization
 #
 
 #
@@ -82,9 +82,7 @@ GetOptions(
     \%params,
     "config|c=s",
     "help|h",
-    "man",
-    "init",
-    "init-shared"
+    "man"
 );
 
 # Actions
@@ -108,11 +106,26 @@ my $config = Config::Tiny->read($params{config})
     or LOGDIE "Could not read the configuration file at $params{config}: $!";
 
 # Create some section objects
-my $config_announcer = delete $config->{announcer};
+my $config_root = delete $config->{_} || {};
+my $config_harvester = delete $config->{harvester} || {};
+my $config_announcer = delete $config->{announcer} || {};
 my $config_log = delete $config->{log}
     or LOGDIE "Log configuration section missing";
 my $config_database = delete $config->{database}
     or LOGDIE "Database configuration section missing";
+
+
+#
+# Check root configuration
+#
+
+LOGDIE "Please specify a delay value"
+    unless (defined $config_root->{delay});
+LOGDIE "Please specify a stationlist"
+    unless (defined $config_root->{stations});
+
+# Process the stationlist
+my @stationlist = split(/,/, $config_root->{stations});
 
 
 #
@@ -176,51 +189,25 @@ LOGDIE "Please define a DBD URI to use"
     unless(defined $config_database->{uri});
 
 # Configure database
-my $database = new WWW::IRail::DelayAnnouncer::Database(%$config_database);
-
-if ($params{init}) {
-    DEBUG "Creating database (local tables)";
-    $database->create();
-}
-
-if ($params{'init-shared'}) {
-    DEBUG "Creating database (shared tables)";
-    $database->create_shared();
-}
+my $dbh = DBIx::Log4perl->connect($config_database->{uri}, $config_database->{username}, $config_database->{password}, {
+    RaiseError  => 1,
+    PrintError  => 0,
+    AutoCommit  => 1
+});
 
 
 #
-# Load publishers
+# Load harvester
 #
 
-DEBUG "Loading publishers";
+DEBUG "Loading harvester";
 
-# Discover the available publishers
-my %publisher_packages = discover('WWW::IRail::DelayAnnouncer::Publisher');
-
-# Load configuration arguments
-my %publisher_config;
-foreach my $package (keys %publisher_packages) {
-    my @parts = split(/::/, $package);
-    my $config_name = lc($parts[-1]);
-    
-    if (defined $config->{$config_name}) {
-        my $config_publisher = delete $config->{$config_name};
-        if ($config_publisher->{enabled}) {
-            DEBUG "Marking $config_name publisher to load";
-            $publisher_config{$package} = $config_publisher;
-        } else {
-            DEBUG "Skipping $config_name publisher, due to not enabled";
-            delete $publisher_packages{$package};
-        }
-    } else {
-        WARN "Missing configuration for $config_name publisher";
-        delete $publisher_packages{$package};
-    }
-}
-
-# Instantiate publishers
-my $publishers = instantiate(\%publisher_packages, \%publisher_config);
+# Configure harvester
+my $harvester = new WWW::IRail::Harvester(
+    %{$config_harvester},
+    dbh                 => $dbh,
+    stations            => \@stationlist
+);
 
 
 #
@@ -229,23 +216,32 @@ my $publishers = instantiate(\%publisher_packages, \%publisher_config);
 
 DEBUG "Loading announcer";
 
-# Check configuration
-LOGDIE "Please define a station to use"
-    unless (defined $config_announcer->{station});
-LOGDIE "Please specify whether this is a standalone installation or not."
-    unless (defined $config_announcer->{standalone});
-
 # Configure announcer
-my $announcer = new WWW::IRail::DelayAnnouncer(%{$config_announcer}, database => $database);
-foreach my $publisher (@$publishers) {
-    my @parts = split(/::/, ref($publisher));
-    INFO "Registering " . lc($parts[-1]) . " publisher";
-    $announcer->add_publisher($publisher);
-}
+my $announcer = new WWW::IRail::DelayAnnouncer(
+    %{$config_announcer},
+    dbh                 => $dbh,
+    harvester_storage   => $harvester->storage(),
+    stations            => \@stationlist
+);
 
-# Start announcer
-INFO "Starting announcer";
-$announcer->run();
+
+
+###############################################################################
+# Main
+#
+
+INFO "Entering main loop";
+
+while (1) {
+    DEBUG "Activating the harvester";
+    $harvester->work();
+    
+    DEBUG "Activating the announcer";
+    $announcer->work();
+    
+    DEBUG "Sleeping...";
+    sleep($config_root->{delay});
+}
 
 exit(0);
 
@@ -256,7 +252,9 @@ exit(0);
 
 sub quit {
     INFO "Closing down";
-    $database->close();
+    
+    $dbh->disconnect()
+            or WARN "Could not disconnect database: $DBI::errstr";
     
     INFO "Bye...";
     exit(0);

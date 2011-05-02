@@ -3,33 +3,34 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Trend::DelayStreak;
+package WWW::IRail::DelayAnnouncer::Trend::Station::ConsecutiveDelayed;
 
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
 use Lingua::EN::Inflect qw/:ALL/;
-use List::Util qw/max/;
+use List::Util qw/sum/;
 
 # Write nicely
 use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Trend';
+with 'WWW::IRail::DelayAnnouncer::Trend::Station';
 
 # Package information
 our $ENABLED = 1;
 
-# Streak messages
-my @CATEGORIES = qw/10 20 30 40 50 60 70/;
+# Delay messages
+my @CATEGORIES = qw/2 3 4 5 6 7 8 9/;
 my @MESSAGES = (
-	'$station is on a Delay Spree',
-	'$station is Dominating',
-	'$station is on a Rampage',
-	'$station is Unstoppable',
-	'$station is Godlike',
-	'$station is Wicked sick',
+	'$station just scored a Double Delay',
+	'$station just scored a Triple Delay',
+	'$station just scored a Multi Delay',
+	'$station just scored a Mega Delay',
+	'$station just scored a Ultra Delay',
+	'$station just scored a M-M-M-M-Monster Delay',
+	'$station just scored a LUDICROUS Delay',
 	'H O L Y  S H I T'
 );
 
@@ -56,19 +57,18 @@ my @MESSAGES = (
 =cut
 
 sub expiry {
-	return 3600 * 6;
+	return 3600 * 4;
 }
 
 sub calculate_score {
-	my ($self, $database) = @_;
+	my ($self) = @_;
 	
-	my @departures = $database->get_departure_range(time-3600);
-	my $delayed = scalar grep { $_->{delay} > 0 } @departures;
-	my $amount = scalar @departures;
-	DEBUG "Amount of delays in the past hour: $delayed (on a total of $amount)";
+	my @departures = $self->storage->get_past_departures_consecutively_delayed($self->station);
+	my $amount = (scalar @departures);
+	DEBUG "Amount of consecutively delayed trains: $amount";
 	
 	my $category = 0;
-	while ($category != scalar @CATEGORIES && $delayed >= $CATEGORIES[$category]) {
+	while ($category != scalar @CATEGORIES && $amount >= $CATEGORIES[$category]) {
 		$category++;
 	}
 	DEBUG "Score category: $category";
@@ -84,7 +84,7 @@ sub message {
 	
 	return $streak . " ("
 		. NO("delay", $CATEGORIES[$score-1])
-		. " in one hour)";
+		. " in a row)";
 }
 
 

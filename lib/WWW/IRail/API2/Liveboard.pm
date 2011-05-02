@@ -3,17 +3,16 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement;
+package WWW::IRail::API2::Liveboard;
 
 # Packages
-use Moose::Role;
+use Moose;
+use Log::Log4perl qw(:easy);
+use WWW::IRail::API2::Departure;
 
 # Write nicely
 use strict;
 use warnings;
-
-# Roles
-with 'WWW::IRail::DelayAnnouncer::Plugin';
 
 
 ################################################################################
@@ -26,10 +25,15 @@ with 'WWW::IRail::DelayAnnouncer::Plugin';
 
 =cut
 
-has 'bag' => (
-	is		=> 'rw',
-	isa		=> 'HashRef',
-	default		=> sub { {} }
+has 'timestamp' => (
+	is		=> 'ro',
+	isa		=> 'Int'
+);
+
+has 'departures' => (
+	is		=> 'ro',
+	isa		=> 'ArrayRef',
+	default		=> sub { [] }
 );
 
 
@@ -43,21 +47,6 @@ has 'bag' => (
 
 =cut
 
-requires 'init_bag';
-
-requires 'messages';
-
-around 'messages' => sub {
-	my $orig = shift;
-	my $self = shift;
-	
-	my $messages = $self->$orig(@_);
-	foreach my $message (@$messages) {
-		$message = "Achievement unlocked: $message.";
-	}
-	
-	return $messages;
-};
 
 42;
 

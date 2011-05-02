@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Notification::ExcessiveDelay;
+package WWW::IRail::DelayAnnouncer::Notification::Station::ExcessiveDelay;
 
 # Packages
 use Moose;
@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Notification';
+with 'WWW::IRail::DelayAnnouncer::Notification::Station';
 
 # Package information
 our $ENABLED = 1;
@@ -44,22 +44,22 @@ our $ENABLED = 1;
 =cut
 
 sub messages {
-	my ($self, $database) = @_;
+	my ($self) = @_;
 	
 	# Process all departures
 	my @messages;
-	foreach my $departure (@{$database->current_liveboard()->departures()}) {
-		if ($departure->{delay} > 0) {
-			my $delay = int($departure->{delay} / 60);
-			my $previous_delay = $self->get_data($database, $departure->{station}, $departure->{time}) || 0;
+	foreach my $departure (@{$self->storage->current_liveboard($self->station)->departures()}) {
+		if ($departure->delay > 0) {
+			my $delay = int($departure->delay / 60);
+			my $previous_delay = $self->get_data($departure->direction, $departure->time) || 0;
 			if ($delay > $previous_delay + 30) {
 				$delay = $delay - $delay % 30;
-				$self->set_data($database, $departure->{station} ,$departure->{time}, $delay);
-				my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($departure->{time});
+				$self->set_data($departure->direction ,$departure->time, $delay);
+				my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($departure->time);
 				push @messages, [ "info", "the train of "
 					. sprintf("%02i:%02i", $hour, $min)
 					. " to "
-					. $departure->{station}
+					. $self->storage->get_station_name($departure->direction)
 					. " has over "
 					. NO("minute", $delay)
 					. " of delay" ];

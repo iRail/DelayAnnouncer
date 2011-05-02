@@ -3,12 +3,10 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::MonthlyDelay;
+package WWW::IRail::DelayAnnouncer::Highscore::Station;
 
 # Packages
-use Moose;
-use Log::Log4perl qw(:easy);
-use Time::Duration;
+use Moose::Role;
 
 # Write nicely
 use strict;
@@ -16,12 +14,6 @@ use warnings;
 
 # Roles
 with 'WWW::IRail::DelayAnnouncer::Highscore';
-
-# Base class
-extends 'WWW::IRail::DelayAnnouncer::Highscore::RangedDelay';
-
-# Package information
-our $ENABLED = 1;
 
 
 ################################################################################
@@ -34,6 +26,12 @@ our $ENABLED = 1;
 
 =cut
 
+has 'station' => (
+	is		=> 'ro',
+	isa		=> 'Str',
+	required	=> 1
+);
+
 
 ################################################################################
 # Methods
@@ -45,29 +43,7 @@ our $ENABLED = 1;
 
 =cut
 
-sub calculate_score {
-	my ($self, $database) = @_;
-	
-	return $self->_calculate_score($database, 30 * 7 * 24 * 3600);
-};
 
-sub message {
-	my ($self, $station, $score) = @_;
-	
-	return "$station managed to collect "
-		. duration($score)
-		. " of delay in a single month";
-}
-
-sub global_message {
-	my ($self, $station, $previous_station, $score) = @_;
-	
-	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader of the monthly delay rankings";		
-	} else {
-		return "$station just became leader of the monthly delay rankings";
-	}
-}
 
 42;
 

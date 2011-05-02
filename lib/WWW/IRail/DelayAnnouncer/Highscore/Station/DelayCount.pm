@@ -3,25 +3,22 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::WeeklyDelay;
+package WWW::IRail::DelayAnnouncer::Highscore::Station::DelayCount;
 
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
-use Time::Duration;
+use Lingua::EN::Inflect qw/:ALL/;
 
 # Write nicely
 use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Highscore';
-
-# Base class
-extends 'WWW::IRail::DelayAnnouncer::Highscore::RangedDelay';
+with 'WWW::IRail::DelayAnnouncer::Highscore::Station';
 
 # Package information
-our $ENABLED = 1;
+our $ENABLED = 0;
 
 
 ################################################################################
@@ -46,26 +43,30 @@ our $ENABLED = 1;
 =cut
 
 sub calculate_score {
-	my ($self, $database) = @_;
+	my ($self) = @_;
 	
-	return $self->_calculate_score($database, 7 * 24 * 3600);
+	my $count = scalar
+		grep { $_->delay }
+		@{$self->storage->current_liveboard($self->station)->departures()};
+	DEBUG "Delay count: $count";
+	return $count;
 };
 
 sub message {
 	my ($self, $station, $score) = @_;
 	
-	return "$station managed to collect "
-		. duration($score)
-		. " of delay in a single week";
+	return "$station just delayed "
+		. $score
+		. " of the upcoming trains for the next hour";
 }
 
 sub global_message {
 	my ($self, $station, $previous_station, $score) = @_;
 	
 	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader of the weekly delay rankings";
+		return "$station just ousted $previous_station as leader of upcoming delays";		
 	} else {
-		return "$station just became leader of the weekly delay rankings";
+		return "$station just became leader of upcoming delays";		
 	}
 }
 

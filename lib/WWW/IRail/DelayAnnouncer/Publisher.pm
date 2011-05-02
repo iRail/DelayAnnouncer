@@ -12,6 +12,9 @@ use Moose::Role;
 use strict;
 use warnings;
 
+# Roles
+with 'WWW::IRail::DelayAnnouncer::Plugin';
+
 
 ################################################################################
 # Attributes
@@ -23,6 +26,12 @@ use warnings;
 
 =cut
 
+has 'settings' => (
+	is		=> 'rw',
+	isa		=> 'HashRef',
+	default		=> sub { {} }
+);
+
 
 ################################################################################
 # Methods
@@ -33,6 +42,8 @@ use warnings;
 =head1 METHODS
 
 =cut
+
+requires 'init_settings';
 
 requires 'publish';
 

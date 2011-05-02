@@ -3,11 +3,10 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Publisher::Console;
+package WWW::IRail::DelayAnnouncer::Publisher::Station;
 
 # Packages
-use Moose;
-use Log::Log4perl qw(:easy);
+use Moose::Role;
 
 # Write nicely
 use strict;
@@ -27,6 +26,12 @@ with 'WWW::IRail::DelayAnnouncer::Publisher';
 
 =cut
 
+has 'station' => (
+	is		=> 'ro',
+	isa		=> 'Str',
+	required	=> 1
+);
+
 
 ################################################################################
 # Methods
@@ -38,11 +43,7 @@ with 'WWW::IRail::DelayAnnouncer::Publisher';
 
 =cut
 
-sub publish {
-	my ($self, $message) = @_;
-	
-	INFO "Console publish: " . $message;
-}
+
 
 42;
 

@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::DelayAmount;
+package WWW::IRail::DelayAnnouncer::Highscore::Station::DelayAmount;
 
 # Packages
 use Moose;
@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Highscore';
+with 'WWW::IRail::DelayAnnouncer::Highscore::Station';
 
 # Package information
 our $ENABLED = 0;
@@ -44,11 +44,11 @@ our $ENABLED = 0;
 =cut
 
 sub calculate_score {
-	my ($self, $database) = @_;
+	my ($self) = @_;
 	
 	my $amount = sum
-		grep { $_->{delay} }
-		@{$database->current_liveboard()->departures()};
+		grep { $_->delay }
+		@{$self->storage->current_liveboard($self->station)->departures()};
 	$amount = int($amount/60);
 	DEBUG "Delay amount: " . NO("minute", $amount);
 	return $amount;

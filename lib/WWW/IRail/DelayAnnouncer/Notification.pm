@@ -12,6 +12,9 @@ use Moose::Role;
 use strict;
 use warnings;
 
+# Roles
+with 'WWW::IRail::DelayAnnouncer::Plugin';
+
 
 ################################################################################
 # Attributes
@@ -33,24 +36,16 @@ use warnings;
 
 =cut
 
-sub id {
-	my ($self) = @_;
-	
-	my $class = ref($self);
-	my @parts = split(/::/, $class);
-	return $parts[-1];
-}
-
 sub get_data {
-	my ($self, $database, $station, $time) = @_;
+	my ($self, $station, $time) = @_;
 	
-	return $database->get_notification_data($self->id(), $station, $time);
+	return $self->storage->get_notification_data($self->owner, $self->id, $station, $time);
 }
 
 sub set_data {
-	my ($self, $database, $station, $time, $data) = @_;
+	my ($self, $station, $time, $data) = @_;
 	
-	return $database->set_notification_data($self->id(), $station, $time, $data);
+	return $self->storage->set_notification_data($self->owner, $self->id, $station, $time, $data);
 }
 
 requires 'messages';

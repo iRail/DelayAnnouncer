@@ -7,10 +7,8 @@ package WWW::IRail::DelayAnnouncer;
 
 # Packages
 use Moose;
-use File::Find;
-use WWW::IRail::DelayAnnouncer::LiveboardUpdater;
-use WWW::IRail::DelayAnnouncer::Database;
-use WWW::IRail::DelayAnnouncer::Auxiliary qw/discover instantiate/;
+use WWW::IRail::DelayAnnouncer::Storage;
+use WWW::IRail::DelayAnnouncer::StationWorker;
 use Log::Log4perl qw(:easy);
 
 # Write nicely
@@ -28,96 +26,61 @@ use warnings;
 
 =cut
 
-has 'standalone' => (
+has 'dbh' => (
 	is		=> 'ro',
-	isa		=> 'Bool',
+	isa		=> 'DBI::db',
 	required	=> 1
 );
 
-has 'station' => (
+has 'stations' => (
 	is		=> 'ro',
-	isa		=> 'Str',
+	isa		=> 'ArrayRef[Str]',
 	required	=> 1
 );
 
-has 'publishers' => (
-	is		=> 'rw',
-	isa		=> 'ArrayRef',
-	default		=> sub { [] }
+has 'workers' => (
+	is		=> 'ro',
+	isa		=> 'HashRef',
+	lazy		=> 1,
+	builder		=> '_build_workers'
 );
 
-has 'delay' => (
+sub _build_workers {
+	my ($self) = @_;
+	
+	my %workers;
+	foreach my $station (@{$self->stations}) {
+		my $worker = new WWW::IRail::DelayAnnouncer::StationWorker(
+			station			=> $station,
+			announcer_storage	=> $self->announcer_storage,
+			harvester_storage	=> $self->harvester_storage
+		);
+		$workers{$station} = $worker;
+	}
+	
+	return \%workers;
+}
+
+has 'announcer_storage' => (
 	is		=> 'ro',
-	isa		=> 'Int',
-	default		=> 120
+	isa		=> 'WWW::IRail::DelayAnnouncer::Storage',
+	lazy		=> 1,
+	builder		=> '_build_announcer_storage'
 );
 
-has 'liveboardupdater' => (
-	is		=> 'ro',
-	isa		=> 'WWW::IRail::DelayAnnouncer::LiveboardUpdater',
-);
+sub _build_announcer_storage {
+	my ($self) = @_;
+	
+	return new WWW::IRail::DelayAnnouncer::Storage(
+		dbh	=> $self->dbh
+	);
+}
 
-has 'database' => (
+has 'harvester_storage' => (
 	is		=> 'ro',
-	isa		=> 'WWW::IRail::DelayAnnouncer::Database',
+	isa		=> 'WWW::IRail::Harvester::Storage',
 	required	=> 1
 );
-
-has 'highscores' => (
-	is		=> 'ro',
-	isa		=> 'ArrayRef',
-	builder		=> '_build_highscores'
-);
-
-sub _build_highscores {
-	my %plugins = discover('WWW::IRail::DelayAnnouncer::Highscore')
-		or LOGDIE "Error discovering highscore plugins: $!";
-	my @objects = @{instantiate(\%plugins, undef)};
-	return [grep { eval('$' . ref($_) . '::ENABLED || 0') }
-		@objects];
-}
-
-has 'achievements' => (
-	is		=> 'ro',
-	isa		=> 'ArrayRef',
-	builder		=> '_build_achievements'
-);
-
-sub _build_achievements {
-	my %plugins = discover('WWW::IRail::DelayAnnouncer::Achievement')
-		or LOGDIE "Error discovering achievement plugins: $!";
-	my @objects = @{instantiate(\%plugins, undef)};
-	return [grep { eval('$' . ref($_) . '::ENABLED || 0') }
-		@objects];
-}
-
-has 'notifications' => (
-	is		=> 'ro',
-	isa		=> 'ArrayRef',
-	builder		=> '_build_notifications'
-);
-
-sub _build_notifications {
-	my %plugins = discover('WWW::IRail::DelayAnnouncer::Notification')
-		or LOGDIE "Error discovering achievement plugins: $!";
-	my @objects = @{instantiate(\%plugins, undef)};
-	return [grep { eval('$' . ref($_) . '::ENABLED || 0') }
-		@objects];
-}
-
-has 'trends' => (
-	is		=> 'ro',
-	isa		=> 'ArrayRef',
-	builder		=> '_build_trends'
-);
-
-sub _build_trends {
-	my %plugins = discover('WWW::IRail::DelayAnnouncer::Trend')
-		or LOGDIE "Error discovering trend plugins: $!";
-	my @objects = @{instantiate(\%plugins, undef)};
-	return [grep { eval('$' . ref($_) . '::ENABLED || 0') }
-		@objects];
-}
 
 
 ################################################################################
@@ -133,151 +96,18 @@ sub _build_trends {
 sub BUILD {
 	my ($self, $args) = @_;
 	
-	$self->{liveboardupdater} = new WWW::IRail::DelayAnnouncer::LiveboardUpdater(station => $self->station());
+	# Build lazy attributes
+	$self->announcer_storage;
+	$self->workers;
 }
 
-sub add_publisher {
-	my ($self, $publisher) = @_;
-	
-	push @{$self->publishers()}, $publisher;
-}
-
-sub run {
+sub work {
 	my ($self) = @_;
 	
-	DEBUG "Entering main loop";
-	my %plugin_highscores;
-	while (1) {
-		DEBUG "Updating liveboard";
-		my $liveboard = $self->liveboardupdater()->update();
-		if (	defined $liveboard
-			&& (
-				! defined $self->database->current_liveboard()
-				||
-				$liveboard->timestamp() != $self->database->current_liveboard()->timestamp()
-			   )
-			)
-		{
-			$self->database()->add_liveboard($liveboard);
-			my @messages;
-			
-			# Check highscores
-			DEBUG "Checking highscores";
-			foreach my $plugin (@{$self->highscores()}) {
-				DEBUG "Processing " . ref($plugin);
-				my $score = $plugin->calculate_score($self->database());
-				next unless defined($score);
-				DEBUG "Current score: $score";
-				
-				# Check score
-				my $highscore = $self->database()->get_highscore($plugin->id());
-				DEBUG "Saved highscore: $highscore";
-				if ($score > $highscore) {
-					DEBUG "Highscore topped with a score of $score";
-					$plugin_highscores{$plugin->id()} = [ time, $plugin->message($self->station(), $score) ];
-					$self->database()->set_highscore($plugin->id(), $score);
-				}
-				
-				# Check global score
-				unless ($self->standalone()) {
-					$self->database()->lock_global_highscore();
-					my ($owner, $global_highscore) = $self->database()->get_global_highscore($plugin->id());
-					DEBUG "Current owner of global highscore: $owner, with a score of $global_highscore";
-					if ($score > $global_highscore) {
-						DEBUG "Global highscore topped with a score of $score";
-						unless (defined $owner && $owner eq $self->station()) {
-							# Force a publish of a queue'd highscore message as well
-							if (defined $plugin_highscores{$plugin->id()}) {
-								my ($time, $message) = @{$plugin_highscores{$plugin->id()}};
-								push @messages, $message;
-								delete $plugin_highscores{$plugin->id()};
-							}							
-							push @messages, $plugin->global_message($self->station(), $owner, $score);
-						}
-						$self->database()->set_global_highscore($plugin->id(), $self->station(), $score);
-					}
-					$self->database()->unlock_global_highscore();
-				}
-			}
-			foreach my $plugin (keys %plugin_highscores) {
-				my ($time, $message) = @{$plugin_highscores{$plugin}};
-				if (time - $time > 600) {	# Wait for the highscore to settle
-					push @messages, $message;
-					delete $plugin_highscores{$plugin};
-				} else {
-					DEBUG "Not yet publishing a message of "
-					. $plugin
-					. " due to not settled ("
-					. (time - $time)
-					. " seconds passed since publish)";
-				}
-			}			
-			
-			# Check achievements
-			DEBUG "Checking achievements";
-			foreach my $plugin (@{$self->achievements()}) {
-				DEBUG "Processing " . ref($plugin);
-				$self->database()->init_achievement($plugin);
-				my $plugin_messages = $plugin->messages($self->database());
-				if (@$plugin_messages) {
-					push @messages, @$plugin_messages;
-					$self->database()->set_achievement_storage($plugin->id(), $plugin->storage());
-				}
-			}
-			
-			# Check notifications
-			DEBUG "Checking notifications";
-			foreach my $plugin (@{$self->notifications()}) {
-				DEBUG "Processing " . ref($plugin);
-				my $plugin_messages = $plugin->messages($self->database());
-				# TODO: manage storage from here... but don't load too many fields within perl
-				if (@$plugin_messages) {
-					push @messages, @$plugin_messages;
-				}			
-			}
-			
-			# Check trends
-			DEBUG "Checking trends";
-			foreach my $plugin (@{$self->trends()}) {
-				DEBUG "Processing " . ref($plugin);
-				my $score = $plugin->calculate_score($self->database());				
-				next unless defined($score);
-				DEBUG "Current trend value: $score";
-				
-				# Check score
-				my ($previous, $high_time, $high_score) = $self->database()->get_trend($plugin->id());
-				DEBUG "Previous trend value: $previous";
-				DEBUG "High trend value: $high_score (hit " . (time-$high_time) . " seconds ago)";				
-				if ($score > $previous) {
-					DEBUG "Trend value increased";
-					# Check trend
-					if ($score > $high_score || (time-$high_time) > $plugin->expiry()) {
-						DEBUG "Trend highscore breached or expired, publishing message";
-						push @messages, $plugin->message($self->station(), $score);
-						$high_time = time;
-						$high_score = $score;
-					} else {
-						DEBUG "Trend value didn't increase highscore, which hasn't expired yet";
-					}
-				}
-				$self->database()->set_trend($plugin->id(), $score, $high_time, $high_score);
-			}
-			
-			# Publish messages
-			if (scalar @messages > 0) {
-				DEBUG "Publish messages";
-				foreach my $message (@messages) {
-					next unless (defined $message);
-					foreach my $publisher (@{$self->{publishers}}) {
-						$publisher->publish($message);
-					}
-				}
-			}
-		}
-
-		# Idle for a while
-		sleep($self->delay());
-	}	
+	foreach my $station (@{$self->stations}) {
+		DEBUG "Activating worker for station " . $station;
+		$self->workers->{$station}->work();
+	}
 }
 
 

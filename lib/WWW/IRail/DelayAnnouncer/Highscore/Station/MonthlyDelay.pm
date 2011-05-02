@@ -3,20 +3,22 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement::TrainDelay;
+package WWW::IRail::DelayAnnouncer::Highscore::Station::MonthlyDelay;
 
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
-use List::Util qw(max);
-use Lingua::EN::Inflect qw/:ALL/;
+use Time::Duration;
 
 # Write nicely
 use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Achievement';
+with 'WWW::IRail::DelayAnnouncer::Highscore::Station';
+
+# Base class
+extends 'WWW::IRail::DelayAnnouncer::Highscore::Station::RangedDelay';
 
 # Package information
 our $ENABLED = 1;
@@ -43,35 +45,29 @@ our $ENABLED = 1;
 
 =cut
 
-sub init_storage {
+sub calculate_score {
 	my ($self) = @_;
 	
-	$self->storage()->{delay} = 0;
+	return $self->_calculate_score(30 * 7 * 24 * 3600);
+};
+
+sub message {
+	my ($self, $station, $score) = @_;
+	
+	return "$station managed to collect "
+		. duration($score)
+		. " of delay in a single month";
 }
 
-sub messages {
-	my ($self, $database) = @_;
+sub global_message {
+	my ($self, $station, $previous_station, $score) = @_;
 	
-	# Calculate delay
-	my $delay = ( max
-		map { $_->{delay} }
-		@{$database->current_liveboard()->departures()} ) || 0;
-	$delay  = int($delay / 60);
-	DEBUG "Maximum delay: " . NO("minute", $delay);
-	
-	# Check
-	DEBUG "Stored delay: " . $self->storage()->{delay};
-	if ($delay > ($self->storage()->{delay} + 10)) {
-		DEBUG "Current delay is 10 minutes higher, triggering message";
-		$self->storage()->{delay} = $delay - $delay % 10;
-		
-		return [ 'delay a train '
-			. NO("minute", $self->storage()->{delay})
-			. ' or more' ];
-	}	
-	return [];
+	if (defined $previous_station) {
+		return "$station just ousted $previous_station as leader of the monthly delay rankings";		
+	} else {
+		return "$station just became leader of the monthly delay rankings";
+	}
 }
-
 
 42;
 

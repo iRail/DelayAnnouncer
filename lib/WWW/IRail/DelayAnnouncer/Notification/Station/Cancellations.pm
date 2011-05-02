@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Notification::Cancellations;
+package WWW::IRail::DelayAnnouncer::Notification::Station::Cancellations;
 
 # Packages
 use Moose;
@@ -17,7 +17,7 @@ use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Notification';
+with 'WWW::IRail::DelayAnnouncer::Notification::Station';
 
 # Package information
 our $ENABLED = 1;
@@ -45,17 +45,17 @@ our $ENABLED = 1;
 =cut
 
 sub messages {
-	my ($self, $database) = @_;
-	return [] unless (defined $database->previous_liveboard());
+	my ($self) = @_;
+	return [] unless (defined $self->storage->previous_liveboard($self->station));
 	
 	# Process all previous departures
 	my @messages;
-	foreach my $previous_departure (@{$database->previous_liveboard()->departures()}) {		
+	foreach my $previous_departure (@{$self->storage->previous_liveboard($self->station)->departures()}) {		
 		# Check current liveboard
 		my $found = 0;
-		foreach my $current_departure (@{$database->current_liveboard()->departures()}) {
-			if ($previous_departure->{station} eq $current_departure->{station}
-				&& $previous_departure->{time} == $current_departure->{time}) {
+		foreach my $current_departure (@{$self->storage->current_liveboard($self->station)->departures()}) {
+			if ($previous_departure->direction eq $current_departure->direction
+				&& $previous_departure->time == $current_departure->time) {
 				$found = 1;
 				last;
 			}
@@ -63,18 +63,18 @@ sub messages {
 		next if ($found);
 		
 		# Has the train left?
-		next if (time - $previous_departure->{time} > 60);
+		next if (time - $previous_departure->time > 60);
 		
 		# A train without delay "can't" get cancelled
-		next unless ($previous_departure->{delay});
+		next unless ($previous_departure->delay);
 		
-		my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($previous_departure->{time});
+		my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($previous_departure->time);
 		push @messages, [ "warn", "the train of "
 			. sprintf("%02i:%02i", $hour, $min)
 			. " to "
-			. $previous_departure->{station}
+			. $self->storage->get_station_name($previous_departure->direction)
 			. " seems to have been canceled (it had a delay of "
-			. duration($previous_departure->{delay})
+			. duration($previous_departure->delay)
 			. ")" ];
 	}
 	return \@messages;

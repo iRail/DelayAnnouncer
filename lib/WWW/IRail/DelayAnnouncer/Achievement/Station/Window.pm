@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement::Window;
+package WWW::IRail::DelayAnnouncer::Achievement::Station::Window;
 
 # Packages
 use Moose;
@@ -15,7 +15,7 @@ use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Achievement';
+with 'WWW::IRail::DelayAnnouncer::Achievement::Station';
 
 # Package information
 our $ENABLED = 1;
@@ -42,29 +42,29 @@ our $ENABLED = 1;
 
 =cut
 
-sub init_storage {
+sub init_bag {
 	my ($self) = @_;
 	
-	$self->storage()->{window} = 0;
+	$self->bag()->{window} = 0;
 }
 
 sub messages {
-	my ($self, $database) = @_;
+	my ($self) = @_;
 	
 	# Get and sort departures
-	my @departures = sort { $a->{time} <=> $b->{time} }
-		@{$database->current_liveboard()->departures()};
+	my @departures = sort { $a->time <=> $b->time }
+		@{$self->storage->current_liveboard($self->station)->departures()};
 	
 	# Get the delay window (e.g. from the soonest to depart train,
 	# to the first non-delayed one)
 	my $amount = 0;
 	my ($start, $end) = (time, time);
 	foreach my $departure (@departures) {
-		$end = $departure->{time};
-		last unless ($departure->{delay});
-		if ($start > $departure->{time}) {
+		$end = $departure->time;
+		last unless ($departure->delay);
+		if ($start > $departure->time) {
 			# In case a delayed train should already have left
-			$start = $departure->{time};
+			$start = $departure->time;
 		}
 		$amount++;
 	}
@@ -81,13 +81,13 @@ sub messages {
 	}
 	
 	# Check
-	DEBUG "Stored window " . $self->storage()->{window};
-	if ($window > ($self->storage()->{window} + 5)) {
+	DEBUG "Stored window " . $self->bag->{window};
+	if ($window > ($self->bag->{window} + 5)) {
 		DEBUG "Current window is 5 minutes longer, triggering message";
-		$self->storage()->{window} = $window - $window % 5;
+		$self->bag->{window} = $window - $window % 5;
 		
 		return [ 'delay all trains within the next '
-			. NO("minute", $self->storage()->{window}) ];
+			. NO("minute", $self->bag->{window}) ];
 	}	
 	return []
 }

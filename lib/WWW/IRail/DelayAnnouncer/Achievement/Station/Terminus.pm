@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement::Terminus;
+package WWW::IRail::DelayAnnouncer::Achievement::Station::Terminus;
 
 # Packages
 use Moose;
@@ -15,7 +15,7 @@ use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Achievement';
+with 'WWW::IRail::DelayAnnouncer::Achievement::Station';
 
 # Package information
 our $ENABLED = 1;
@@ -42,34 +42,36 @@ our $ENABLED = 1;
 
 =cut
 
-sub init_storage {
+sub init_bag {
 	my ($self) = @_;
 }
 
 sub messages {
-	my ($self, $database) = @_;
+	my ($self) = @_;
 	
 	# Fetch per-terminus delays
 	my %termini_stats;
-	foreach my $departure (@{$database->current_liveboard()->departures()}) {
+	foreach my $departure (@{$self->storage->current_liveboard($self->station)->departures()}) {
 		my @stats = (0, 0);
-		if (defined $termini_stats{$departure->{station}}) {
-			@stats = @{$termini_stats{$departure->{station}}};
+		if (defined $termini_stats{$departure->direction}) {
+			@stats = @{$termini_stats{$departure->direction}};
 		}
 		$stats[0]++;
 		if ($departure->{delay} > 0) {
 			$stats[1]++;
 		}
-		$termini_stats{$departure->{station}} = \@stats;
+		$termini_stats{$departure->direction} = \@stats;
 	}
 	
 	# Check them
 	my @messages;
 	foreach my $terminus (keys %termini_stats) {
 		my @stats = @{$termini_stats{$terminus}};
-		my $previous = $self->storage()->{$terminus} || 0;
+		my $previous = $self->bag->{$terminus} || 0;
 		DEBUG "Found " . $stats[0]
-			. " trains to $terminus ("
+			. " trains to "
+			. $self->storage->get_station_name($terminus)
+			. " ("
 			. $stats[1]
 			. " delayed, previous limit was "
 			. $previous
@@ -80,8 +82,8 @@ sub messages {
 				push @messages, "delay all "
 					. NO("train", $stats[1])
 					. " to "
-					. $terminus;
-				$self->storage()->{$terminus} = $stats[1];
+					. $self->storage->get_station_name($terminus);
+				$self->bag->{$terminus} = $stats[1];
 			}
 		}
 	}

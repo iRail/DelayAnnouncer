@@ -3,20 +3,15 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::RangedDelay;
+package WWW::IRail::API2::Station;
 
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
-use List::Util qw/sum/;
-use Time::Duration;
 
 # Write nicely
 use strict;
 use warnings;
-
-# Package information
-our $ENABLED = 0;
 
 
 ################################################################################
@@ -29,6 +24,17 @@ our $ENABLED = 0;
 
 =cut
 
+has [qw/id name/] => (
+	is		=> 'ro',
+	isa		=> 'Str',
+	required	=> 1
+);
+
+has [qw/longitude latitude/] => (
+	is		=> 'ro',
+	isa		=> 'Maybe[Num]'
+);
+
 
 ################################################################################
 # Methods
@@ -40,25 +46,6 @@ our $ENABLED = 0;
 
 =cut
 
-sub _calculate_score {
-	my ($self, $database, $range) = @_;
-	
-	my $start = time() - $range;
-	
-	my $earliest_departure = $database->get_earliest_departure();
-	
-	if ($earliest_departure->{time} > $start) {
-		DEBUG "Bailing out, earliest departure falls within the range.";
-		return undef;
-	}
-	
-	my @departures = $database->get_departure_range($start);
-	my $delay = sum
-		map { $_->{delay} }
-		@departures;
-	DEBUG "Accumulated delay: " . duration($delay);
-	return $delay;
-};
 
 42;
 

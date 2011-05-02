@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement::TotalPercentage;
+package WWW::IRail::DelayAnnouncer::Achievement::Station::TotalPercentage;
 
 # Packages
 use Moose;
@@ -14,7 +14,7 @@ use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Achievement';
+with 'WWW::IRail::DelayAnnouncer::Achievement::Station';
 
 # Package information
 our $ENABLED = 1;
@@ -41,17 +41,17 @@ our $ENABLED = 1;
 
 =cut
 
-sub init_storage {
+sub init_bag {
 	my ($self) = @_;
 	
-	$self->storage()->{percentage} = 0;
+	$self->bag->{percentage} = 0;
 }
 
 sub messages {
-	my ($self, $database) = @_;
+	my ($self) = @_;
 	
 	# At least 5 trains
-	my $total = scalar @{$database->current_liveboard()->departures()};
+	my $total = scalar @{$self->storage->current_liveboard($self->station)->departures()};
 	DEBUG "Found $total trains";
 	if ($total < 10) {
 		DEBUG "Bailing out, need at least 10 trains";
@@ -60,19 +60,19 @@ sub messages {
 	
 	# Calculate percentage
 	my $delayed = scalar
-		grep { $_->{delay} > 0 }
-		@{$database->current_liveboard()->departures()};	
+		grep { $_->delay > 0 }
+		@{$self->storage->current_liveboard($self->station)->departures()};	
 	my $percentage = int (100 * $delayed / $total);
 	DEBUG "Found $delayed delayed trains (or $percentage%)";
 	
 	# Check
-	DEBUG "Stored percentage: " . $self->storage()->{percentage};
-	if ($percentage > ($self->storage()->{percentage} + 10)) {
+	DEBUG "Stored percentage: " . $self->bag->{percentage};
+	if ($percentage > ($self->bag->{percentage} + 10)) {
 		DEBUG "Current amount is 10% higher, triggering message";
-		$self->storage()->{percentage} = $percentage - $percentage % 10;
+		$self->bag->{percentage} = $percentage - $percentage % 10;
 		
 		return [ 'delay at least '
-			. $self->storage()->{percentage}
+			. $self->bag->{percentage}
 			. '% of the trains' ];
 	}	
 	return []

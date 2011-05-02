@@ -3,15 +3,17 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Liveboard;
+package WWW::IRail::DelayAnnouncer::Notification::Station;
 
 # Packages
-use Moose;
-use Log::Log4perl qw(:easy);
+use Moose::Role;
 
 # Write nicely
 use strict;
 use warnings;
+
+# Roles
+with 'WWW::IRail::DelayAnnouncer::Notification';
 
 
 ################################################################################
@@ -24,14 +26,10 @@ use warnings;
 
 =cut
 
-has 'timestamp' => (
+has 'station' => (
 	is		=> 'ro',
-	isa		=> 'Int'
-);
-
-has 'departures' => (
-	is		=> 'ro',
-	isa		=> 'ArrayRef'
+	isa		=> 'Str',
+	required	=> 1
 );
 
 
@@ -44,6 +42,7 @@ has 'departures' => (
 =head1 METHODS
 
 =cut
+
 
 
 42;

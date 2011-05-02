@@ -12,6 +12,9 @@ use Moose::Role;
 use strict;
 use warnings;
 
+# Roles
+with 'WWW::IRail::DelayAnnouncer::Plugin';
+
 
 ################################################################################
 # Attributes
@@ -33,14 +36,6 @@ use warnings;
 =head1 METHODS
 
 =cut
-
-sub id {
-	my ($self) = @_;
-	
-	my $class = ref($self);
-	my @parts = split(/::/, $class);
-	return $parts[-1];
-}
 
 requires 'calculate_score';
 

@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement;
+package WWW::IRail::DelayAnnouncer::Trend::Station;
 
 # Packages
 use Moose::Role;
@@ -13,7 +13,7 @@ use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Plugin';
+with 'WWW::IRail::DelayAnnouncer::Trend';
 
 
 ################################################################################
@@ -26,10 +26,10 @@ with 'WWW::IRail::DelayAnnouncer::Plugin';
 
 =cut
 
-has 'bag' => (
-	is		=> 'rw',
-	isa		=> 'HashRef',
-	default		=> sub { {} }
+has 'station' => (
+	is		=> 'ro',
+	isa		=> 'Str',
+	required	=> 1
 );
 
 
@@ -43,21 +43,7 @@ has 'bag' => (
 
 =cut
 
-requires 'init_bag';
 
-requires 'messages';
-
-around 'messages' => sub {
-	my $orig = shift;
-	my $self = shift;
-	
-	my $messages = $self->$orig(@_);
-	foreach my $message (@$messages) {
-		$message = "Achievement unlocked: $message.";
-	}
-	
-	return $messages;
-};
 
 42;
 

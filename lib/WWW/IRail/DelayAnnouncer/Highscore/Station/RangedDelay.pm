@@ -3,17 +3,20 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement;
+package WWW::IRail::DelayAnnouncer::Highscore::Station::RangedDelay;
 
 # Packages
-use Moose::Role;
+use Moose;
+use Log::Log4perl qw(:easy);
+use List::Util qw/sum/;
+use Time::Duration;
 
 # Write nicely
 use strict;
 use warnings;
 
-# Roles
-with 'WWW::IRail::DelayAnnouncer::Plugin';
+# Package information
+our $ENABLED = 0;
 
 
 ################################################################################
@@ -26,12 +29,6 @@ with 'WWW::IRail::DelayAnnouncer::Plugin';
 
 =cut
 
-has 'bag' => (
-	is		=> 'rw',
-	isa		=> 'HashRef',
-	default		=> sub { {} }
-);
-
 
 ################################################################################
 # Methods
@@ -43,20 +40,24 @@ has 'bag' => (
 
 =cut
 
-requires 'init_bag';
-
-requires 'messages';
-
-around 'messages' => sub {
-	my $orig = shift;
-	my $self = shift;
+sub _calculate_score {
+	my ($self, $range) = @_;
 	
-	my $messages = $self->$orig(@_);
-	foreach my $message (@$messages) {
-		$message = "Achievement unlocked: $message.";
+	my $start = time() - $range;
+	
+	my $earliest_departure = $self->storage->get_earliest_departure($self->station);
+	
+	if ($earliest_departure->time > $start) {
+		DEBUG "Bailing out, earliest departure falls within the range.";
+		return undef;
 	}
 	
-	return $messages;
+	my @departures = $self->storage->get_departure_range($self->station, $start);
+	my $delay = sum
+		map { $_->delay }
+		@departures;
+	DEBUG "Accumulated delay: " . duration($delay);
+	return $delay;
 };
 
 42;

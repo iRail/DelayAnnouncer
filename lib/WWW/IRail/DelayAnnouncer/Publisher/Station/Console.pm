@@ -3,22 +3,18 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Highscore::DailyDelay;
+package WWW::IRail::DelayAnnouncer::Publisher::Station::Console;
 
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
-use Time::Duration;
 
 # Write nicely
 use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Highscore';
-
-# Base class
-extends 'WWW::IRail::DelayAnnouncer::Highscore::RangedDelay';
+with 'WWW::IRail::DelayAnnouncer::Publisher::Station';
 
 # Package information
 our $ENABLED = 1;
@@ -45,28 +41,14 @@ our $ENABLED = 1;
 
 =cut
 
-sub calculate_score {
-	my ($self, $database) = @_;
+sub init_settings {
 	
-	return $self->_calculate_score($database, 24 * 3600);
-};
-
-sub message {
-	my ($self, $station, $score) = @_;
-	
-	return "$station managed to collect "
-		. duration($score)
-		. " of delay in a single day";
 }
 
-sub global_message {
-	my ($self, $station, $previous_station, $score) = @_;
+sub publish {
+	my ($self, $message) = @_;
 	
-	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader of the daily delay rankings";
-	} else {
-		return "$station just became leader of the daily delay rankings";
-	}
+	INFO "Console publish for station " . $self->station . ": " . $message;
 }
 
 42;

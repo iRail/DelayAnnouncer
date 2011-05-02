@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement;
+package WWW::IRail::DelayAnnouncer::Plugin;
 
 # Packages
 use Moose::Role;
@@ -11,9 +11,6 @@ use Moose::Role;
 # Write nicely
 use strict;
 use warnings;
-
-# Roles
-with 'WWW::IRail::DelayAnnouncer::Plugin';
 
 
 ################################################################################
@@ -26,12 +23,26 @@ with 'WWW::IRail::DelayAnnouncer::Plugin';
 
 =cut
 
-has 'bag' => (
-	is		=> 'rw',
-	isa		=> 'HashRef',
-	default		=> sub { {} }
+has 'id' => (
+	is		=> 'ro',
+	isa		=> 'Str',
+	lazy		=> 1,
+	builder		=> '_build_id'
 );
 
+sub _build_id {
+	my ($self) = @_;
+	
+	my $class = ref($self);
+	my @parts = split(/::/, $class);
+	return $parts[-1];
+}
+
+has 'storage' => (
+	is		=> 'ro',
+	isa		=> 'WWW::IRail::Harvester::Storage',
+	required	=> 1
+);
 
 ################################################################################
 # Methods
@@ -42,22 +53,6 @@ has 'bag' => (
 =head1 METHODS
 
 =cut
-
-requires 'init_bag';
-
-requires 'messages';
-
-around 'messages' => sub {
-	my $orig = shift;
-	my $self = shift;
-	
-	my $messages = $self->$orig(@_);
-	foreach my $message (@$messages) {
-		$message = "Achievement unlocked: $message.";
-	}
-	
-	return $messages;
-};
 
 42;
 

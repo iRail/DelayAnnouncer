@@ -60,7 +60,7 @@ sub discover {
 }
 
 sub instantiate {
-	my ($plugins, $arguments) = @_;
+	my ($plugins, @arguments) = @_;
 	
 	# Process all plugins
 	my @plugins_usable;
@@ -82,16 +82,7 @@ sub instantiate {
 			next;
 		}
 		
-		if (defined $arguments && defined $arguments->{$package}) {
-			my $argument = $arguments->{$package};
-			push @plugins_usable, new $package($argument) if (ref($argument) eq "");
-			push @plugins_usable, new $package($$argument) if (ref($argument) eq "SCALAR");
-			push @plugins_usable, new $package(@{$argument}) if (ref($argument) eq "ARRAY");
-			push @plugins_usable, new $package(%{$argument}) if (ref($argument) eq "HASH");
-			push @plugins_usable, new $package(&$argument) if (ref($argument) eq "CODE");
-		} else {
-			push @plugins_usable, new $package;
-		}
+		push @plugins_usable, new $package(@arguments);
 	}
 	
 	return \@plugins_usable;

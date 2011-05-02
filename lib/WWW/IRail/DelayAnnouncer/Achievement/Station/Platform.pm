@@ -3,7 +3,7 @@
 #
 
 # Package definition
-package WWW::IRail::DelayAnnouncer::Achievement::Platform;
+package WWW::IRail::DelayAnnouncer::Achievement::Station::Platform;
 
 # Packages
 use Moose;
@@ -15,7 +15,7 @@ use strict;
 use warnings;
 
 # Roles
-with 'WWW::IRail::DelayAnnouncer::Achievement';
+with 'WWW::IRail::DelayAnnouncer::Achievement::Station';
 
 # Package information
 our $ENABLED = 1;
@@ -42,33 +42,33 @@ our $ENABLED = 1;
 
 =cut
 
-sub init_storage {
+sub init_bag {
 	my ($self) = @_;
 }
 
 sub messages {
-	my ($self, $database) = @_;
+	my ($self) = @_;
 	
 	# Fetch per-terminus delays
 	my %platforms_stats;
-	foreach my $departure (@{$database->current_liveboard()->departures()}) {
-		next unless (defined $departure->{platform});
+	foreach my $departure (@{$self->storage->current_liveboard($self->station)->departures()}) {
+		next unless (defined $departure->platform);
 		my @stats = (0, 0);
-		if (defined $platforms_stats{$departure->{platform}}) {
-			@stats = @{$platforms_stats{$departure->{platform}}};
+		if (defined $platforms_stats{$departure->platform}) {
+			@stats = @{$platforms_stats{$departure->platform}};
 		}
 		$stats[0]++;
-		if ($departure->{delay} > 0) {
+		if ($departure->delay > 0) {
 			$stats[1]++;
 		}
-		$platforms_stats{$departure->{platform}} = \@stats;
+		$platforms_stats{$departure->platform} = \@stats;
 	}
 	
 	# Check them
 	my @messages;
 	foreach my $platform (keys %platforms_stats) {
 		my @stats = @{$platforms_stats{$platform}};
-		my $previous = $self->storage()->{$platform} || 0;
+		my $previous = $self->bag->{$platform} || 0;
 		DEBUG "Found " . $stats[0]
 			. " trains on platform $platform ("
 			. $stats[1]
@@ -82,7 +82,7 @@ sub messages {
 					. NO("train", $stats[1])
 					. ' on platform '
 					. $platform;
-				$self->storage()->{$platform} = $stats[1];
+				$self->bag->{$platform} = $stats[1];
 			}
 		}
 	}
