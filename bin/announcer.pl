@@ -121,11 +121,6 @@ my $config_database = delete $config->{database}
 
 LOGDIE "Please specify a delay value"
     unless (defined $config_root->{delay});
-LOGDIE "Please specify a stationlist"
-    unless (defined $config_root->{stations});
-
-# Process the stationlist
-my @stationlist = split(/,/, $config_root->{stations});
 
 
 #
@@ -202,11 +197,15 @@ my $dbh = DBIx::Log4perl->connect($config_database->{uri}, $config_database->{us
 
 DEBUG "Loading harvester";
 
+# Check configuration
+LOGDIE "Please specify which stations to harvest"
+    unless(defined $config_harvester->{stations});
+
 # Configure harvester
 my $harvester = new WWW::IRail::Harvester(
     %{$config_harvester},
     dbh                 => $dbh,
-    stations            => \@stationlist
+    stations            => split(/,/, $config_harvester->{stations})
 );
 
 
@@ -216,12 +215,16 @@ my $harvester = new WWW::IRail::Harvester(
 
 DEBUG "Loading announcer";
 
+# Check configuration
+LOGDIE "Please specify which stations to announce"
+    unless(defined $config_announcer->{stations});
+
 # Configure announcer
 my $announcer = new WWW::IRail::DelayAnnouncer(
     %{$config_announcer},
     dbh                 => $dbh,
     harvester_storage   => $harvester->storage(),
-    stations            => \@stationlist
+    stations            => split(/,/, $config_announcer->{stations})
 );
 
 
