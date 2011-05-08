@@ -146,7 +146,7 @@ END
 sub get_station_name {
 	my ($self, $id) = @_;
 	
-	return map { $_->name } grep { $_->id eq $id } @{$self->get_stations};
+	return (map { $_->name } grep { $_->id eq $id } @{$self->get_stations})[0];
 }
 
 sub current_liveboard {

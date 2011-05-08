@@ -71,10 +71,10 @@ sub _build_twitter {
 sub init_settings {
 	my ($self) = @_;
 	
-	INFO "Insert the consumer key for station " . $self->station;
+	INFO "Insert the consumer key for station " . $self->storage->get_station_name($self->station);
 	chomp(my $consumer_key = <STDIN>);
 	
-	INFO "Insert the consumer secret for station " . $self->station;
+	INFO "Insert the consumer secret for station " . $self->storage->get_station_name($self->station);
 	chomp(my $consumer_secret = <STDIN>);
 	
 	my $nt = Net::Twitter->new(
@@ -92,7 +92,7 @@ sub init_settings {
 	}
 	INFO "Configured for Twitter account " . $screen_name;
 	
-	my $station_data = (grep { $_->id eq $self->station } $self->storage->get_stations())[0];
+	my $station_data = (grep { $_->id eq $self->station } @{$self->storage->get_stations()})[0];
 	my ($url, $longitude, $latitude);
 	if (defined $station_data) {
 		my $url_long = 'http://liveboards.irail.be/liveboard.html?station=' . $station_data->name;
@@ -102,7 +102,7 @@ sub init_settings {
 		$latitude = $station_data->latitude;
 	}
 	
-	my $hashtag = '#StationBattle';
+	my $hashtag = 'StationBattle';
 	
 	$self->settings({
 		consumer_key		=> $consumer_key,
