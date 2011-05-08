@@ -195,7 +195,7 @@ sub liveboard_arrivals {
 		my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($arrival_data->{time});
 		DEBUG "Arrival at "
 			. sprintf("%02i:%02i", $hour, $min)
-			. " to " . $arrival_data->{station}
+			. " from " . $arrival_data->{station}
 			. ", on platform "
 			. $arrival_data->{platform};
 		if ($arrival_data->{platform} eq "") {

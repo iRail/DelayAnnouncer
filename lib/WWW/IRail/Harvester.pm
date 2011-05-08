@@ -105,11 +105,13 @@ sub work {
 		DEBUG "Harvesting liveboard for station " . $station;
 		my $liveboard = new WWW::IRail::API2::Liveboard(station => $station);
 		
+		my @extra_stations;
+		
 		foreach my $arrival (@{$liveboard->arrivals}) {
 			unless (grep { $_->id eq $arrival->origin } @{$self->storage->get_stations}) {
 				my ($station) = grep { $_->id eq $arrival->origin } @{$liveboard->internal_stations};
 				WARN "Inserting unknown station " . $station->id;
-				$self->storage->set_stations($station);
+				push @extra_stations, $station;
 			}
 		}
 		
@@ -117,10 +119,11 @@ sub work {
 			unless (grep { $_->id eq $departure->direction } @{$self->storage->get_stations}) {
 				my ($station) = grep { $_->id eq $departure->direction } @{$liveboard->internal_stations};
 				WARN "Inserting unknown station " . $station->id;
-				$self->storage->set_stations($station);
+				push @extra_stations, $station;
 			}
 		}
 		
+		$self->storage->add_stations(@extra_stations);
 		$self->storage->add_liveboard($liveboard);
 	}
 }

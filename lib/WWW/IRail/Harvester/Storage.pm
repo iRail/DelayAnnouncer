@@ -158,6 +158,14 @@ END
 	$sth->execute_array( {} );
 }
 
+sub add_stations {
+	my ($self, @stations) = @_;
+	
+	$self->set_stations(@stations);
+	@{$self->stations} = ();
+	$self->get_stations();
+}
+
 sub get_station_name {
 	my ($self, $id) = @_;
 	
