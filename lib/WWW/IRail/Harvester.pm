@@ -112,8 +112,16 @@ sub work {
 				splice @{$liveboard->departures}, $i--, 1;
 			}
 		}
+		
+		for (my $i = 0; $i < @{$liveboard->arrivals}; $i++) {
+			my $id = $liveboard->arrivals->[$i]->direction;
+			unless (grep { $_->id eq $id } @{$self->storage->get_stations}) {
+				WARN "Dropping arrival to unknown station $id";
+				splice @{$liveboard->arrivals}, $i--, 1;
+			}
+		}
+		
 		$self->storage->add_liveboard($liveboard);
-		my @messages;
 	}
 }
 

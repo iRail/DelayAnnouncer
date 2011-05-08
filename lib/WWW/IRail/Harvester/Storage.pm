@@ -97,6 +97,23 @@ CREATE TABLE IF NOT EXISTS departures (
 END
 	);
 	$sth->execute();
+	
+	# Arrival table
+	$sth = $self->dbh()->prepare(<<END
+CREATE TABLE IF NOT EXISTS arrivals (
+	station varchar(40) NOT NULL,
+	origin varchar(40) NOT NULL,
+	vehicle varchar(20) NOT NULL,
+	delay int(11) DEFAULT NULL,
+	platform int(11) DEFAULT NULL,
+	`time` int(11) NOT NULL,
+	PRIMARY KEY (station,`time`,vehicle),
+	FOREIGN KEY (station) REFERENCES stations(id),
+	FOREIGN KEY (origin) REFERENCES stations(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;	
+END
+	);
+	$sth->execute();
 }
 
 sub get_stations {
@@ -173,15 +190,33 @@ VALUES (?, ?, ?, ?, ?, ?)
 ON DUPLICATE KEY UPDATE
 	direction = VALUES(direction),
 	platform = VALUES(platform),
-	delay = GREATEST(COALESCE(delay, 0), COALESCE(VALUES(delay), 0))
+	delay = GREATEST(delay, VALUES(delay))
 END
 	);	
 	$sth->bind_param_array(1, $liveboard->station);
-	$sth->bind_param_array(2, [map { $_->{time} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(3, [map { $_->{vehicle} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(4, [map { $_->{direction} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(5, [map { $_->{platform} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(6, [map { $_->{delay} } @{$liveboard->departures()}]);
+	$sth->bind_param_array(2, [map { $_->{time} } @{$liveboard->departures}]);
+	$sth->bind_param_array(3, [map { $_->{vehicle} } @{$liveboard->departures}]);
+	$sth->bind_param_array(4, [map { $_->{direction} } @{$liveboard->departures}]);
+	$sth->bind_param_array(5, [map { $_->{platform} } @{$liveboard->departures}]);
+	$sth->bind_param_array(6, [map { $_->{delay} } @{$liveboard->departures}]);
+	$sth->execute_array( {} );
+	
+	# Put data in arrivals table
+	$sth = $self->dbh()->prepare(<<END
+INSERT INTO arrivals (station, time, vehicle, origin, platform, delay)
+VALUES (?, ?, ?, ?, ?, ?)
+ON DUPLICATE KEY UPDATE
+	origin = VALUES(origin),
+	platform = VALUES(platform),
+	delay = GREATEST(delay, VALUES(delay))
+END
+	);	
+	$sth->bind_param_array(1, $liveboard->station);
+	$sth->bind_param_array(2, [map { $_->{time} } @{$liveboard->arrivals}]);
+	$sth->bind_param_array(3, [map { $_->{vehicle} } @{$liveboard->arrivals}]);
+	$sth->bind_param_array(4, [map { $_->{direction} } @{$liveboard->arrivals}]);
+	$sth->bind_param_array(5, [map { $_->{platform} } @{$liveboard->arrivals}]);
+	$sth->bind_param_array(6, [map { $_->{delay} } @{$liveboard->arrivals}]);
 	$sth->execute_array( {} );
 	
 	# Switch liveboard buffers

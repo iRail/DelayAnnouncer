@@ -49,7 +49,8 @@ has 'platform' => (
 
 has 'delay' => (
 	is		=> 'ro',
-	isa		=> 'Int'
+	isa		=> 'Int',
+	default		=> 0
 );
 
 

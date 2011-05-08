@@ -10,6 +10,7 @@ use Moose;
 use Log::Log4perl qw(:easy);
 use WWW::IRail::API2;
 use WWW::IRail::API2::Departure;
+use WWW::IRail::API2::Arrival;
 
 # Write nicely
 use strict;
@@ -66,6 +67,23 @@ sub _build_departures {
 	
 	return $departures;
 }
+
+has 'arrivals' => (
+	is		=> 'rw',
+	isa		=> 'ArrayRef',
+	lazy		=> 1,
+	builder		=> '_build_arrivals'
+);
+
+sub _build_arrivals {
+	my ($self) = @_;
+	
+	my ($arrivals, $timestamp) = $self->api->liveboard_arrivals($self->station);
+	$self->timestamp($timestamp);
+	
+	return $arrivals;
+}
+
 
 
 ################################################################################

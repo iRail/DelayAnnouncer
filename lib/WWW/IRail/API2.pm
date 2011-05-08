@@ -128,7 +128,7 @@ sub liveboard_departures {
 	}
 	
 	# Process data
-	DEBUG "Fetched liveboard";
+	DEBUG "Fetched liveboard departures";
 	my $timestamp = $data->{timestamp};
 	my $departures_data = $data->{departures}{departure};	
 	my @departures;
@@ -151,6 +151,59 @@ sub liveboard_departures {
 		);
 	}
 	return \@departures, $timestamp;
+}
+
+sub liveboard_arrivals {
+	my ($self, $station) = @_;
+	
+	my $url = $self->base . 'liveboard.php'
+		. '?station=' . uri_escape($station)
+		.'&arrdep=A'
+		.'&format=json';
+		
+	# Fetch response
+	my $response = $self->ua()->get($url);
+	unless($response->is_success) {
+		WARN "Could not fetch liveboard data";
+		WARN $response->status_line;
+		return undef;
+	}
+	
+	# Decode data
+	my $data;
+	eval {
+		$data = $self->json()->decode($response->decoded_content);
+	};
+	if ($@) {
+		WARN "Could not decode liveboard data";
+		WARN $@;
+		return undef;
+	}
+	
+	# Process data
+	DEBUG "Fetched liveboard arrivals";
+	my $timestamp = $data->{timestamp};
+	my $arrivals_data = $data->{departures}{departure};	
+	my @arrivals;
+	foreach my $arrival_data (@{$arrivals_data}) {
+		my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($arrival_data->{time});
+		DEBUG "Arrival at "
+			. sprintf("%02i:%02i", $hour, $min)
+			. " to " . $arrival_data->{station}
+			. ", on platform "
+			. $arrival_data->{platform};
+		if ($arrival_data->{platform} eq "") {
+			$arrival_data->{platform} = undef;
+		}
+		push @arrivals, new WWW::IRail::API2::Departure(
+			origin		=> $arrival_data->{stationinfo}->{id},
+			'time'		=> $arrival_data->{'time'},
+			platform	=> $arrival_data->{platform},
+			vehicle		=> $arrival_data->{vehicle},
+			delay		=> $arrival_data->{delay}
+		);
+	}
+	return \@arrivals, $timestamp;
 }
 
 42;
