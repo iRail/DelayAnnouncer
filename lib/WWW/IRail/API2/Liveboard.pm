@@ -54,7 +54,7 @@ has 'timestamp' => (
 
 has 'departures' => (
 	is		=> 'rw',
-	isa		=> 'ArrayRef',
+	isa		=> 'Maybe[ArrayRef]',
 	lazy		=> 1,
 	builder		=> '_build_departures'
 );
@@ -63,15 +63,17 @@ sub _build_departures {
 	my ($self) = @_;
 	
 	my ($departures, $stations, $timestamp) = $self->api->liveboard_departures($self->station);
-	$self->timestamp($timestamp);
-	push @{$self->internal_stations}, @{$stations};
+	if (defined $departures) {
+		$self->timestamp($timestamp);
+		push @{$self->internal_stations}, @{$stations};
+	}
 	
 	return $departures;
 }
 
 has 'arrivals' => (
 	is		=> 'rw',
-	isa		=> 'ArrayRef',
+	isa		=> 'Maybe[ArrayRef]',
 	lazy		=> 1,
 	builder		=> '_build_arrivals'
 );
@@ -80,8 +82,10 @@ sub _build_arrivals {
 	my ($self) = @_;
 	
 	my ($arrivals, $stations, $timestamp) = $self->api->liveboard_arrivals($self->station);
-	$self->timestamp($timestamp);
-	push @{$self->internal_stations}, @{$stations};
+	if (defined $arrivals) {
+		$self->timestamp($timestamp);
+		push @{$self->internal_stations}, @{$stations};
+	}
 	
 	return $arrivals;
 }

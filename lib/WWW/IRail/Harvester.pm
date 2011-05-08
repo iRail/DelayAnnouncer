@@ -107,19 +107,23 @@ sub work {
 		
 		my @extra_stations;
 		
-		foreach my $arrival (@{$liveboard->arrivals}) {
-			unless (grep { $_->id eq $arrival->origin } @{$self->storage->get_stations}) {
-				my ($station) = grep { $_->id eq $arrival->origin } @{$liveboard->internal_stations};
-				WARN "Inserting unknown station " . $station->id;
-				push @extra_stations, $station;
+		if (defined $liveboard->arrivals) {
+			foreach my $arrival (@{$liveboard->arrivals}) {
+				unless (grep { $_->id eq $arrival->origin } @{$self->storage->get_stations}) {
+					my ($station) = grep { $_->id eq $arrival->origin } @{$liveboard->internal_stations};
+					WARN "Inserting unknown station " . $station->id;
+					push @extra_stations, $station;
+				}
 			}
 		}
-		
-		foreach my $departure (@{$liveboard->departures}) {
-			unless (grep { $_->id eq $departure->direction } @{$self->storage->get_stations}) {
-				my ($station) = grep { $_->id eq $departure->direction } @{$liveboard->internal_stations};
-				WARN "Inserting unknown station " . $station->id;
-				push @extra_stations, $station;
+
+		if (defined $liveboard->departures) {
+			foreach my $departure (@{$liveboard->departures}) {
+				unless (grep { $_->id eq $departure->direction } @{$self->storage->get_stations}) {
+					my ($station) = grep { $_->id eq $departure->direction } @{$liveboard->internal_stations};
+					WARN "Inserting unknown station " . $station->id;
+					push @extra_stations, $station;
+				}
 			}
 		}
 		

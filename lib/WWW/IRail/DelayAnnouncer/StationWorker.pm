@@ -174,6 +174,9 @@ sub work {
 	my ($self) = @_;
 	my @messages;
 	
+	# TODO: disconnect the stationworkers access to the database from the current liveboard. Everything through
+	# queries! Maybe control the execution through  a "lastchanged" flag in the database.
+	
 	if ($self->timestamp == $self->harvester_storage->current_liveboard($self->station)->timestamp) {
 		return 0;
 	}
