@@ -72,7 +72,6 @@ sub BUILD {
 CREATE TABLE IF NOT EXISTS stations (
 	id varchar(20) NOT NULL,
 	name varchar(40) NOT NULL,
-	`timestamp` int(11) NOT NULL,
 	longitude dec(9,6) DEFAULT NULL,
 	latitude dec(9,6) DEFAULT NULL,
 	PRIMARY KEY (id)
@@ -143,12 +142,12 @@ sub set_stations {
 	# Put or update data in stations table
 	my $sth = $self->dbh()->prepare(<<END
 INSERT
-INTO stations(id, name, longitude, latitude, timestamp)
-VALUES (?, ?, ?, ?, ?)
+INTO stations(id, name, longitude, latitude)
+VALUES (?, ?, ?, ?)
 ON DUPLICATE KEY UPDATE
 	name = VALUES(name),
-	longitude = VALUES(longitude),
-	latitude = VALUES(latitude)
+	longitude = COALESCE(VALUES(longitude), longitude),
+	latitude = COALESCE(VALUES(latitude), latitude)
 END
 	);
 	
@@ -156,7 +155,6 @@ END
 	$sth->bind_param_array(2, [ map { $_->name } @stations ]);
 	$sth->bind_param_array(3, [ map { $_->longitude } @stations ]);
 	$sth->bind_param_array(4, [ map { $_->latitude } @stations ]);
-	$sth->bind_param_array(5, time);
 	$sth->execute_array( {} );
 }
 

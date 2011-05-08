@@ -131,7 +131,7 @@ sub liveboard_departures {
 	DEBUG "Fetched liveboard departures";
 	my $timestamp = $data->{timestamp};
 	my $departures_data = $data->{departures}{departure};	
-	my @departures;
+	my (@departures, @stations);
 	foreach my $departure_data (@{$departures_data}) {
 		my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($departure_data->{time});
 		DEBUG "Departure at "
@@ -149,8 +149,14 @@ sub liveboard_departures {
 			vehicle		=> $departure_data->{vehicle},
 			delay		=> $departure_data->{delay}
 		);
+		push @stations, new WWW::IRail::API2::Station(
+			id		=> $departure_data->{stationinfo}->{id},
+			name		=> $departure_data->{stationinfo}->{name},
+			longitude	=> $departure_data->{stationinfo}->{locationX},
+			latitude	=> $departure_data->{stationinfo}->{locationY}
+		);
 	}
-	return \@departures, $timestamp;
+	return \@departures, \@stations, $timestamp;
 }
 
 sub liveboard_arrivals {
@@ -184,7 +190,7 @@ sub liveboard_arrivals {
 	DEBUG "Fetched liveboard arrivals";
 	my $timestamp = $data->{timestamp};
 	my $arrivals_data = $data->{departures}{departure};	
-	my @arrivals;
+	my (@arrivals, @stations);
 	foreach my $arrival_data (@{$arrivals_data}) {
 		my ($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($arrival_data->{time});
 		DEBUG "Arrival at "
@@ -202,8 +208,14 @@ sub liveboard_arrivals {
 			vehicle		=> $arrival_data->{vehicle},
 			delay		=> $arrival_data->{delay}
 		);
+		push @stations, new WWW::IRail::API2::Station(
+			id		=> $arrival_data->{stationinfo}->{id},
+			name		=> $arrival_data->{stationinfo}->{name},
+			longitude	=> $arrival_data->{stationinfo}->{locationX},
+			latitude	=> $arrival_data->{stationinfo}->{locationY}
+		);
 	}
-	return \@arrivals, $timestamp;
+	return \@arrivals, \@stations, $timestamp;
 }
 
 42;

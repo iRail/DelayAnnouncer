@@ -62,8 +62,9 @@ has 'departures' => (
 sub _build_departures {
 	my ($self) = @_;
 	
-	my ($departures, $timestamp) = $self->api->liveboard_departures($self->station);
+	my ($departures, $stations, $timestamp) = $self->api->liveboard_departures($self->station);
 	$self->timestamp($timestamp);
+	push @{$self->internal_stations}, @{$stations};
 	
 	return $departures;
 }
@@ -78,11 +79,18 @@ has 'arrivals' => (
 sub _build_arrivals {
 	my ($self) = @_;
 	
-	my ($arrivals, $timestamp) = $self->api->liveboard_arrivals($self->station);
+	my ($arrivals, $stations, $timestamp) = $self->api->liveboard_arrivals($self->station);
 	$self->timestamp($timestamp);
+	push @{$self->internal_stations}, @{$stations};
 	
 	return $arrivals;
 }
+
+has 'internal_stations' => (
+	is		=> 'ro',
+	isa		=> 'ArrayRef',
+	default		=> sub { [] }
+);
 
 
 

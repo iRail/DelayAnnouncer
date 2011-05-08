@@ -105,19 +105,19 @@ sub work {
 		DEBUG "Harvesting liveboard for station " . $station;
 		my $liveboard = new WWW::IRail::API2::Liveboard(station => $station);
 		
-		for (my $i = 0; $i < @{$liveboard->departures}; $i++) {
-			my $id = $liveboard->departures->[$i]->direction;
-			unless (grep { $_->id eq $id } @{$self->storage->get_stations}) {
-				WARN "Dropping departure to unknown station $id";
-				splice @{$liveboard->departures}, $i--, 1;
+		foreach my $arrival (@{$liveboard->arrivals}) {
+			unless (grep { $_->id eq $arrival->origin } @{$self->storage->get_stations}) {
+				my ($station) = grep { $_->id eq $arrival->origin } @{$liveboard->internal_stations};
+				WARN "Inserting unknown station " . $station->id;
+				$self->storage->set_stations($station);
 			}
 		}
 		
-		for (my $i = 0; $i < @{$liveboard->arrivals}; $i++) {
-			my $id = $liveboard->arrivals->[$i]->direction;
-			unless (grep { $_->id eq $id } @{$self->storage->get_stations}) {
-				WARN "Dropping arrival to unknown station $id";
-				splice @{$liveboard->arrivals}, $i--, 1;
+		foreach my $departure (@{$liveboard->departures}) {
+			unless (grep { $_->id eq $departure->direction } @{$self->storage->get_stations}) {
+				my ($station) = grep { $_->id eq $departure->direction } @{$liveboard->internal_stations};
+				WARN "Inserting unknown station " . $station->id;
+				$self->storage->set_stations($station);
 			}
 		}
 		
