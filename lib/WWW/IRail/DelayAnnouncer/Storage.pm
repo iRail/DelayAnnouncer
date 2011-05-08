@@ -117,7 +117,7 @@ END
 }
 
 sub get_highscore {
-	my ($self, $owner, $plugin) = @_;
+	my ($self, $highscore) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 SELECT score
@@ -126,8 +126,8 @@ WHERE owner = ? AND id = ?
 END
 	);
 	
-	$sth->bind_param(1, $owner);
-	$sth->bind_param(2, $plugin);
+	$sth->bind_param(1, $highscore->owner);
+	$sth->bind_param(2, $highscore->id);
 	$sth->execute();
 	
 	my $result = $sth->fetchrow_arrayref;
@@ -139,7 +139,7 @@ END
 }
 
 sub set_highscore {
-	my ($self, $owner, $plugin, $score) = @_;
+	my ($self, $highscore, $score) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 REPLACE INTO highscores
@@ -148,15 +148,15 @@ VALUES (?, ?, ?, ?)
 END
 	);
 	
-	$sth->bind_param(1, $owner);
-	$sth->bind_param(2, $plugin);
+	$sth->bind_param(1, $highscore->owner);
+	$sth->bind_param(2, $highscore->id);
 	$sth->bind_param(3, time);
 	$sth->bind_param(4, $score);
 	$sth->execute();
 }
 
 sub get_global_highscore {
-	my ($self, $plugin) = @_;
+	my ($self, $highscore) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 SELECT owner, score
@@ -169,8 +169,8 @@ WHERE id = ? AND score = (
 END
 	);
 	
-	$sth->bind_param(1, $plugin);
-	$sth->bind_param(2, $plugin);
+	$sth->bind_param(1, $highscore->id);
+	$sth->bind_param(2, $highscore->id);
 	$sth->execute();
 	
 	my $result = $sth->fetchrow_arrayref;
@@ -182,21 +182,21 @@ END
 }
 
 sub init_achievement {
-	my ($self, $owner, $achievement) = @_;
+	my ($self, $achievement) = @_;
 	
 	DEBUG "Checking " . $achievement->id();
 	
-	my $bag = $self->get_achievement_bag($owner, $achievement->id());
+	my $bag = $self->get_achievement_bag($achievement);
 	if (keys %$bag) {
 		$achievement->bag($bag);
 	} else {
 		$achievement->init_bag();
-		$self->set_achievement_bag($owner, $achievement->id(), $achievement->bag());
+		$self->set_achievement_bag($achievement);
 	}
 }
 
 sub get_achievement_bag {
-	my ($self, $owner, $plugin) = @_;
+	my ($self, $achievement) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 SELECT entry, value
@@ -205,8 +205,8 @@ WHERE owner = ? AND id = ?
 END
 	);
 	
-	$sth->bind_param(1, $owner);
-	$sth->bind_param(2, $plugin);
+	$sth->bind_param(1, $achievement->owner);
+	$sth->bind_param(2, $achievement->id);
 	$sth->execute();
 	
 	my $result = $sth->fetchall_arrayref;
@@ -216,7 +216,7 @@ END
 }
 
 sub set_achievement_bag {
-	my ($self, $owner, $plugin, $bag) = @_;
+	my ($self, $achievement) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 REPLACE INTO achievements
@@ -225,28 +225,28 @@ VALUES (?, ?, ?, ?, ?)
 END
 	);
 	
-	$sth->bind_param_array(1, $owner);
-	$sth->bind_param_array(2, $plugin);
+	$sth->bind_param_array(1, $achievement->owner);
+	$sth->bind_param_array(2, $achievement->id);
 	$sth->bind_param_array(3, time);
-	$sth->bind_param_array(4, [ keys %{$bag} ]);
-	$sth->bind_param_array(5, [ values %{$bag} ]);
+	$sth->bind_param_array(4, [ keys %{$achievement->bag} ]);
+	$sth->bind_param_array(5, [ values %{$achievement->bag} ]);
 	
 	$sth->execute_array( {} );	
 }
 
 sub get_notification_data {
-	my ($self, $owner, $plugin, $station, $time) = @_;
+	my ($self, $notification, $direction, $time) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 SELECT data
 FROM notifications
-WHERE owner = ? AND id = ? AND station = ? AND time = ?
+WHERE owner = ? AND id = ? AND direction = ? AND time = ?
 END
 	);
 	
-	$sth->bind_param(1, $owner);
-	$sth->bind_param(2, $plugin);
-	$sth->bind_param(3, $station);
+	$sth->bind_param(1, $notification->owner);
+	$sth->bind_param(2, $notification->id);
+	$sth->bind_param(3, $direction);
 	$sth->bind_param(4, $time);
 	$sth->execute();
 	
@@ -259,19 +259,19 @@ END
 }
 
 sub set_notification_data {
-	my ($self, $owner, $plugin, $station, $time, $data) = @_;
+	my ($self, $notification, $direction, $time, $data) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 REPLACE INTO notifications
-(owner, id, timestamp, station, time, data)
+(owner, id, timestamp, direction, time, data)
 VALUES (?, ?, ?, ?, ?, ?)
 END
 	);
 	
-	$sth->bind_param(1, $owner);
-	$sth->bind_param(2, $plugin);
+	$sth->bind_param(1, $notification->owner);
+	$sth->bind_param(2, $notification->id);
 	$sth->bind_param(3, time);
-	$sth->bind_param(4, $station);
+	$sth->bind_param(4, $direction);
 	$sth->bind_param(5, $time);
 	$sth->bind_param(6, $data);
 	
@@ -280,7 +280,7 @@ END
 }
 
 sub get_trend {
-	my ($self, $owner, $plugin) = @_;
+	my ($self, $trend) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 SELECT score, high_time, high_score
@@ -289,8 +289,8 @@ WHERE owner = ? AND id = ?
 END
 	);
 	
-	$sth->bind_param(1, $owner);
-	$sth->bind_param(2, $plugin);
+	$sth->bind_param(1, $trend->owner);
+	$sth->bind_param(2, $trend->id);
 	$sth->execute();
 	
 	my $result = $sth->fetchrow_arrayref;
@@ -302,7 +302,7 @@ END
 }
 
 sub set_trend {
-	my ($self, $owner, $plugin, $score, $high_time, $high_score) = @_;
+	my ($self, $trend, $score, $high_time, $high_score) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 REPLACE INTO trends
@@ -311,8 +311,8 @@ VALUES (?, ?, ?, ?, ?, ?)
 END
 	);
 	
-	$sth->bind_param(1, $owner);
-	$sth->bind_param(2, $plugin);
+	$sth->bind_param(1, $trend->owner);
+	$sth->bind_param(2, $trend->id);
 	$sth->bind_param(3, time);
 	$sth->bind_param(4, $score);
 	$sth->bind_param(5, $high_time);
@@ -322,21 +322,21 @@ END
 
 
 sub init_publisher {
-	my ($self, $owner, $publisher) = @_;
+	my ($self, $publisher) = @_;
 	
 	DEBUG "Checking " . $publisher->id();
 	
-	my $settings = $self->get_publisher_settings($owner, $publisher->id());
+	my $settings = $self->get_publisher_settings($publisher);
 	if (keys %$settings) {
 		$publisher->settings($settings);
 	} else {
 		$publisher->init_settings();
-		$self->set_publisher_settings($owner, $publisher->id(), $publisher->settings());
+		$self->set_publisher_settings($publisher);
 	}
 }
 
 sub get_publisher_settings {
-	my ($self, $owner, $plugin) = @_;
+	my ($self, $publisher) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 SELECT entry, value
@@ -345,8 +345,8 @@ WHERE owner = ? AND id = ?
 END
 	);
 	
-	$sth->bind_param(1, $owner);
-	$sth->bind_param(2, $plugin);
+	$sth->bind_param(1, $publisher->owner);
+	$sth->bind_param(2, $publisher->id);
 	$sth->execute();
 	
 	my $result = $sth->fetchall_arrayref;
@@ -356,7 +356,7 @@ END
 }
 
 sub set_publisher_settings {
-	my ($self, $owner, $plugin, $settings) = @_;
+	my ($self, $publisher) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
 REPLACE INTO publishers
@@ -365,10 +365,10 @@ VALUES (?, ?, ?, ?)
 END
 	);
 	
-	$sth->bind_param_array(1, $owner);
-	$sth->bind_param_array(2, $plugin);
-	$sth->bind_param_array(3, [ keys %{$settings} ]);
-	$sth->bind_param_array(4, [ values %{$settings} ]);
+	$sth->bind_param_array(1, $publisher->owner);
+	$sth->bind_param_array(2, $publisher->id);
+	$sth->bind_param_array(3, [ keys %{$publisher->settings} ]);
+	$sth->bind_param_array(4, [ values %{$publisher->settings} ]);
 	
 	$sth->execute_array( {} );	
 }

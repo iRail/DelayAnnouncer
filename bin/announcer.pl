@@ -205,7 +205,7 @@ LOGDIE "Please specify which stations to harvest"
 my $harvester = new WWW::IRail::Harvester(
     %{$config_harvester},
     dbh                 => $dbh,
-    stations            => split(/,/, $config_harvester->{stations})
+    stations            => [split(/,/, $config_harvester->{stations})]
 );
 
 
@@ -224,7 +224,7 @@ my $announcer = new WWW::IRail::DelayAnnouncer(
     %{$config_announcer},
     dbh                 => $dbh,
     harvester_storage   => $harvester->storage(),
-    stations            => split(/,/, $config_announcer->{stations})
+    stations            => [split(/,/, $config_announcer->{stations})]
 );
 
 

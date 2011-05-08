@@ -77,9 +77,10 @@ sub calculate_score {
 };
 
 sub message {
-	my ($self, $station, $score) = @_;
+	my ($self, $score) = @_;
 		
 	my $streak = $MESSAGES[$score-1];
+	my $station = $self->station;
 	$streak =~ s/\$station/$station/g;
 	
 	return $streak . " ("

@@ -103,26 +103,17 @@ sub work {
 	
 	foreach my $station (@{$self->stations}) {
 		DEBUG "Harvesting liveboard for station " . $station;
+		my $liveboard = new WWW::IRail::API2::Liveboard(station => $station);
 		
-		my $liveboard = $self->api->liveboard($station);
-		if (	defined $liveboard
-			&& (
-				! defined $self->storage->current_liveboard($station)
-				||
-				$liveboard->timestamp() != $self->storage->current_liveboard($station)->timestamp()
-			   )
-			)
-		{
-			for (my $i = 0; $i < @{$liveboard->departures}; $i++) {
-				my $id = $liveboard->departures->[$i]->direction;
-				unless (grep { $_->id eq $id } @{$self->storage->get_stations}) {
-					WARN "Dropping departure to unknown station $id";
-					splice @{$liveboard->departures}, $i--, 1;
-				}
+		for (my $i = 0; $i < @{$liveboard->departures}; $i++) {
+			my $id = $liveboard->departures->[$i]->direction;
+			unless (grep { $_->id eq $id } @{$self->storage->get_stations}) {
+				WARN "Dropping departure to unknown station $id";
+				splice @{$liveboard->departures}, $i--, 1;
 			}
-			$self->storage->add_liveboard($station, $liveboard);
-			my @messages;
 		}
+		$self->storage->add_liveboard($liveboard);
+		my @messages;
 	}
 }
 

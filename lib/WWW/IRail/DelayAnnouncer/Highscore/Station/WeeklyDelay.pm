@@ -52,20 +52,20 @@ sub calculate_score {
 };
 
 sub message {
-	my ($self, $station, $score) = @_;
+	my ($self, $score) = @_;
 	
-	return "$station managed to collect "
+	return $self->station . " managed to collect "
 		. duration($score)
 		. " of delay in a single week";
 }
 
 sub global_message {
-	my ($self, $station, $previous_station, $score) = @_;
+	my ($self, $previous_station, $score) = @_;
 	
 	if (defined $previous_station) {
-		return "$station just ousted $previous_station as leader of the weekly delay rankings";
+		return $self->station . " just ousted $previous_station as leader of the weekly delay rankings";
 	} else {
-		return "$station just became leader of the weekly delay rankings";
+		return $self->station . " just became leader of the weekly delay rankings";
 	}
 }
 

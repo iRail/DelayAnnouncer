@@ -81,25 +81,6 @@ END
 	);
 	$sth->execute();
 	
-	# Liveboard table
-	$sth = $self->dbh()->prepare(<<END
-CREATE TABLE IF NOT EXISTS liveboards (
-	station varchar(40) NOT NULL,
-	`timestamp` int(11) NOT NULL,
-	direction varchar(40) NOT NULL,
-	vehicle varchar(20) NOT NULL,
-	delay int(11) DEFAULT NULL,
-	platform int(11) DEFAULT NULL,
-	`time` int(11) NOT NULL,
-	PRIMARY KEY (station,`time`,vehicle,`timestamp`),
-	FOREIGN KEY (station) REFERENCES stations(id),
-	FOREIGN KEY (direction) REFERENCES stations(id),
-	KEY `timestamp` (`timestamp`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;	
-END
-	);
-	$sth->execute();
-	
 	# Departure table
 	$sth = $self->dbh()->prepare(<<END
 CREATE TABLE IF NOT EXISTS departures (
@@ -172,40 +153,7 @@ sub current_liveboard {
 	my ($self, $station) = @_;
 	die("Specify a station") unless defined $station;
 	
-	if (defined $self->liveboards->{$station}) {
-		return $self->liveboards->{$station};
-	} else {
-		my $sth = $self->dbh()->prepare(<<END
-SELECT *
-FROM liveboards
-WHERE station = ? AND timestamp = (
-	SELECT max(timestamp)
-	FROM liveboards
-	WHERE station = ?
-)
-END
-		);
-
-		$sth->bind_param(1, $station);
-		$sth->bind_param(2, $station);
-		$sth->execute();
-
-		my (@departures, $timestamp);
-		while (my $row = $sth->fetchrow_hashref) {
-			$timestamp = $row->{timestamp};
-			push @departures, new WWW::IRail::API2::Departure(%$row);
-		}
-		if (@departures) {
-			my $liveboard = new WWW::IRail::API2::Liveboard(
-				timestamp => $timestamp,
-				departures => \@departures
-			);
-			$self->liveboards->{$station} = $liveboard;
-			return $liveboard;
-		} else {
-			return undef;
-		}
-	}
+	return $self->liveboards->{$station}
 }
 
 sub previous_liveboard {
@@ -216,46 +164,29 @@ sub previous_liveboard {
 }
 
 sub add_liveboard {
-	my ($self, $station, $liveboard) = @_;
+	my ($self, $liveboard) = @_;
 	
-	# Put data in liveboards table
+	# Put data in departures table
 	my $sth = $self->dbh()->prepare(<<END
-INSERT INTO liveboards (station, timestamp, direction, vehicle, delay, platform, time)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO departures (station, time, vehicle, direction, platform, delay)
+VALUES (?, ?, ?, ?, ?, ?)
+ON DUPLICATE KEY UPDATE
+	direction = VALUES(direction),
+	platform = VALUES(platform),
+	delay = GREATEST(COALESCE(delay, 0), COALESCE(VALUES(delay), 0))
 END
 	);	
-	$sth->bind_param_array(1, $station);
-	$sth->bind_param_array(2, $liveboard->timestamp());
-	$sth->bind_param_array(3, [map { $_->{direction} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(4, [map { $_->{vehicle} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(5, [map { $_->{delay} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(6, [map { $_->{platform} } @{$liveboard->departures()}]);
-	$sth->bind_param_array(7, [map { $_->{time} } @{$liveboard->departures()}]);	
-	$sth->execute_array( {} );
-	
-	# Put or update data in departures table
-	$sth = $self->dbh()->prepare(<<END
-REPLACE INTO departures
-SELECT liveboard.station,
-       liveboard.direction,
-       liveboard.vehicle,
-       GREATEST(liveboard.delay, COALESCE(departure.delay, 0)),
-       liveboard.platform,
-       liveboard.time
-FROM liveboards liveboard
-LEFT JOIN departures departure
-	  ON liveboard.station = departure.station
-	     AND liveboard.time = departure.time
-	     AND liveboard.vehicle = departure.vehicle
-WHERE timestamp = ?
-END
-	);
-	$sth->bind_param_array(1, $liveboard->timestamp());
+	$sth->bind_param_array(1, $liveboard->station);
+	$sth->bind_param_array(2, [map { $_->{time} } @{$liveboard->departures()}]);
+	$sth->bind_param_array(3, [map { $_->{vehicle} } @{$liveboard->departures()}]);
+	$sth->bind_param_array(4, [map { $_->{direction} } @{$liveboard->departures()}]);
+	$sth->bind_param_array(5, [map { $_->{platform} } @{$liveboard->departures()}]);
+	$sth->bind_param_array(6, [map { $_->{delay} } @{$liveboard->departures()}]);
 	$sth->execute_array( {} );
 	
 	# Switch liveboard buffers
-	$self->liveboards_previous->{$station} = $self->liveboards->{$station};
-	$self->liveboards->{$station} = $liveboard;
+	$self->liveboards_previous->{$liveboard->station} = $self->liveboards->{$liveboard->station};
+	$self->liveboards->{$liveboard->station} = $liveboard;
 }
 
 sub get_departure_range {

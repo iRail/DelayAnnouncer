@@ -26,6 +26,12 @@ with 'WWW::IRail::DelayAnnouncer::Plugin';
 
 =cut
 
+has 'announcer_storage' => (
+	is		=> 'ro',
+	isa		=> 'WWW::IRail::DelayAnnouncer::Storage',
+	required	=> 1
+);
+
 ################################################################################
 # Methods
 #
@@ -36,16 +42,18 @@ with 'WWW::IRail::DelayAnnouncer::Plugin';
 
 =cut
 
+requires 'owner';
+
 sub get_data {
 	my ($self, $station, $time) = @_;
 	
-	return $self->storage->get_notification_data($self->owner, $self->id, $station, $time);
+	return $self->announcer_storage->get_notification_data($self, $station, $time);
 }
 
 sub set_data {
 	my ($self, $station, $time, $data) = @_;
 	
-	return $self->storage->set_notification_data($self->owner, $self->id, $station, $time, $data);
+	return $self->announcer_storage->set_notification_data($self, $station, $time, $data);
 }
 
 requires 'messages';

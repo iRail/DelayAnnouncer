@@ -43,7 +43,11 @@ has 'station' => (
 
 =cut
 
-
+sub owner {
+	my ($self) = @_;
+	
+	return $self->station;
+}
 
 42;
 

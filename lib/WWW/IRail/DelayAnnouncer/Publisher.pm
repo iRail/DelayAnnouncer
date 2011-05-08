@@ -43,6 +43,8 @@ has 'settings' => (
 
 =cut
 
+requires 'owner';
+
 requires 'init_settings';
 
 requires 'publish';

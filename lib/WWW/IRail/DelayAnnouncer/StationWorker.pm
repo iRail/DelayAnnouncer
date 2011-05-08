@@ -104,7 +104,7 @@ sub _build_notifications {
 	
 	my %plugins = discover('WWW::IRail::DelayAnnouncer::Notification::Station')
 		or LOGDIE "Error discovering achievement plugins: $!";
-	my @objects = @{instantiate(\%plugins, station => $self->station, storage => $self->harvester_storage)};
+	my @objects = @{instantiate(\%plugins, station => $self->station, storage => $self->harvester_storage, announcer_storage => $self->announcer_storage)};
 	return [grep { eval('$' . ref($_) . '::ENABLED || 0') }
 		@objects];
 }
@@ -166,7 +166,7 @@ sub BUILD {
 	
 	# Initialize publisher settings
 	foreach my $publisher (@{$self->publishers}) {
-		$self->announcer_storage->init_publisher($self->station, $publisher);
+		$self->announcer_storage->init_publisher($publisher);
 	}
 }
 
@@ -187,30 +187,27 @@ sub work {
 		next unless defined($score);
 		DEBUG "Current score: $score";
 		
-		# Check score
-		my $highscore = $self->announcer_storage()->get_highscore($self->station, $plugin->id());
+		# Check hishscores
+		my $highscore = $self->announcer_storage()->get_highscore($plugin);
+		my ($global_owner, $global_highscore) = $self->announcer_storage()->get_global_highscore($plugin);
 		DEBUG "Saved highscore: $highscore";
 		if ($score > $highscore) {
 			DEBUG "Highscore topped with a score of $score";
-			$self->highscore_buffer->{$plugin->id()} = [ time, $plugin->message($self->station(), $score) ];
-			$self->announcer_storage()->set_highscore($self->station, $plugin->id(), $score);
-		}
-		
-		# Check global
-		my ($owner, $global_highscore) = $self->announcer_storage()->get_global_highscore($self->station, $plugin->id());
-		DEBUG "Current owner of global highscore: $owner, with a score of $global_highscore";
-		if ($score > $global_highscore) {
-			DEBUG "Global highscore topped with a score of $score";
-			unless (defined $owner && $owner eq $self->station()) {
-				# Force a publish of a queue'd highscore message as well
-				if (defined $self->highscore_buffer->{$plugin->id()}) {
+			$self->highscore_buffer->{$plugin->id()} = [ time, $plugin->message($score) ];
+			
+			if ($score > $global_highscore) {
+				DEBUG "Global highscore topped with a score of $score";
+				unless (defined $global_owner && $global_owner eq $self->station()) {
+					# Force a publish of a queue'd highscore message as well
 					my ($time, $message) = @{$self->highscore_buffer->{$plugin->id()}};
 					push @messages, $message;
 					delete $self->highscore_buffer->{$plugin->id()};
+					
+					push @messages, $plugin->global_message($global_owner, $score);
 				}							
-				push @messages, $plugin->global_message($self->station(), $owner, $score);
 			}
-			$self->announcer_storage()->set_global_highscore($self->station, $plugin->id(), $self->station(), $score);
+			
+			$self->announcer_storage()->set_highscore($plugin, $score);
 		}
 	}
 	foreach my $plugin (keys %{$self->highscore_buffer}) {
@@ -231,11 +228,11 @@ sub work {
 	DEBUG "Checking achievements";
 	foreach my $plugin (@{$self->achievements()}) {
 		DEBUG "Processing " . ref($plugin);
-		$self->announcer_storage()->init_achievement($self->station, $plugin);
+		$self->announcer_storage()->init_achievement($plugin);
 		my $plugin_messages = $plugin->messages();
 		if (@$plugin_messages) {
 			push @messages, @$plugin_messages;
-			$self->announcer_storage()->set_achievement_bag($self->station, $plugin->id(), $plugin->bag());
+			$self->announcer_storage()->set_achievement_bag($plugin);
 		}
 	}
 	
@@ -259,7 +256,7 @@ sub work {
 		DEBUG "Current trend value: $score";
 		
 		# Check score
-		my ($previous, $high_time, $high_score) = $self->announcer_storage()->get_trend($self->station, $plugin->id());
+		my ($previous, $high_time, $high_score) = $self->announcer_storage()->get_trend($plugin);
 		DEBUG "Previous trend value: $previous";
 		DEBUG "High trend value: $high_score (hit " . (time-$high_time) . " seconds ago)";				
 		if ($score > $previous) {
@@ -267,14 +264,14 @@ sub work {
 			# Check trend
 			if ($score > $high_score || (time-$high_time) > $plugin->expiry()) {
 				DEBUG "Trend highscore breached or expired, publishing message";
-				push @messages, $plugin->message($self->station(), $score);
+				push @messages, $plugin->message($score);
 				$high_time = time;
 				$high_score = $score;
 			} else {
 				DEBUG "Trend value didn't increase highscore, which hasn't expired yet";
 			}
 		}
-		$self->announcer_storage()->set_trend($self->station, $plugin->id(), $score, $high_time, $high_score);
+		$self->announcer_storage()->set_trend($plugin, $score, $high_time, $high_score);
 	}
 	
 	# Publish messages

@@ -101,7 +101,7 @@ sub stations {
 	return \@stations;
 }
 
-sub liveboard {
+sub liveboard_departures {
 	my ($self, $station) = @_;
 	
 	my $url = $self->base . 'liveboard.php'
@@ -149,11 +149,8 @@ sub liveboard {
 			vehicle		=> $departure_data->{vehicle},
 			delay		=> $departure_data->{delay}
 		);
-	}	
-	return new WWW::IRail::API2::Liveboard(
-		timestamp	=> $timestamp,
-		departures	=> \@departures
-	);
+	}
+	return \@departures, $timestamp;
 }
 
 42;

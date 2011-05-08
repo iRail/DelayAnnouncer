@@ -37,6 +37,8 @@ with 'WWW::IRail::DelayAnnouncer::Plugin';
 
 =cut
 
+requires 'owner';
+
 requires 'calculate_score';
 
 requires 'message';

@@ -43,6 +43,8 @@ has 'bag' => (
 
 =cut
 
+requires 'owner';
+
 requires 'init_bag';
 
 requires 'messages';

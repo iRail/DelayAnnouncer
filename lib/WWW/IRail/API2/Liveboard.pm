@@ -8,6 +8,7 @@ package WWW::IRail::API2::Liveboard;
 # Packages
 use Moose;
 use Log::Log4perl qw(:easy);
+use WWW::IRail::API2;
 use WWW::IRail::API2::Departure;
 
 # Write nicely
@@ -25,16 +26,46 @@ use warnings;
 
 =cut
 
-has 'timestamp' => (
+has 'api' => (
 	is		=> 'ro',
-	isa		=> 'Int'
+	isa		=> 'WWW::IRail::API2',
+	lazy		=> 1,
+	builder		=> '_build_api'
+);
+
+sub _build_api {
+	my ($self) = @_;
+	
+	return new WWW::IRail::API2;
+}
+
+has 'station' => (
+	is		=> 'ro',
+	isa		=> 'Str',
+	required	=> 1
+);
+
+has 'timestamp' => (
+	is		=> 'rw',
+	isa		=> 'Int',
+	default		=> sub { 0 }
 );
 
 has 'departures' => (
-	is		=> 'ro',
+	is		=> 'rw',
 	isa		=> 'ArrayRef',
-	default		=> sub { [] }
+	lazy		=> 1,
+	builder		=> '_build_departures'
 );
+
+sub _build_departures {
+	my ($self) = @_;
+	
+	my ($departures, $timestamp) = $self->api->liveboard_departures($self->station);
+	$self->timestamp($timestamp);
+	
+	return $departures;
+}
 
 
 ################################################################################
