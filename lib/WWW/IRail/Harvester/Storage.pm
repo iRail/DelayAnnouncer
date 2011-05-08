@@ -329,10 +329,9 @@ sub get_unique_destinations {
 	my ($self, $station) = @_;
 	
 	my $sth = $self->dbh()->prepare(<<END
-SELECT direction
+SELECT DISTINCT direction
 FROM departures
 WHERE station = ?
-GROUP BY direction
 END
 	);
 	
