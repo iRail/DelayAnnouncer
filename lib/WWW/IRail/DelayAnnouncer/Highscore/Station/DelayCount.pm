@@ -55,7 +55,8 @@ sub calculate_score {
 sub message {
 	my ($self, $score) = @_;
 	
-	return $self->station . " just delayed "
+	return $self->stationname
+		. " just delayed "
 		. $score
 		. " of the upcoming trains for the next hour";
 }
@@ -64,9 +65,11 @@ sub global_message {
 	my ($self, $previous_station, $score) = @_;
 	
 	if (defined $previous_station) {
-		return $self->station . " just ousted $previous_station as leader of upcoming delays";		
+		return $self->stationname
+			. " just ousted $previous_station as leader of upcoming delays";		
 	} else {
-		return $self->station . " just became leader of upcoming delays";		
+		return $self->stationname
+			. " just became leader of upcoming delays";		
 	}
 }
 

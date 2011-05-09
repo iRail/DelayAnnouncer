@@ -80,7 +80,7 @@ sub message {
 	my ($self, $score) = @_;
 		
 	my $streak = $MESSAGES[$score-1];
-	my $station = $self->station;
+	my $station = $self->stationname;
 	$streak =~ s/\$station/$station/g;
 	
 	return $streak . " ("

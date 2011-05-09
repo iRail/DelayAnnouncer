@@ -71,10 +71,10 @@ sub _build_twitter {
 sub init_settings {
 	my ($self) = @_;
 	
-	INFO "Insert the consumer key for station " . $self->storage->get_station_name($self->station);
+	INFO "Insert the consumer key for station " . $self->stationname;
 	chomp(my $consumer_key = <STDIN>);
 	
-	INFO "Insert the consumer secret for station " . $self->storage->get_station_name($self->station);
+	INFO "Insert the consumer secret for station " . $self->stationname;
 	chomp(my $consumer_secret = <STDIN>);
 	
 	my $nt = Net::Twitter->new(
