@@ -215,7 +215,7 @@ sub work {
 	}
 	foreach my $plugin (keys %{$self->highscore_buffer}) {
 		my ($time, $message) = @{$self->highscore_buffer->{$plugin}};
-		if (time - $time > 600) {	# Wait for the highscore to settle
+		if (time - $time > 3600) {	# Wait for the highscore to settle
 			push @messages, $message;
 			delete $self->highscore_buffer->{$plugin};
 		} else {
