@@ -126,7 +126,9 @@ sub work {
 						
 			$self->storage->add_stations(@extra_stations);
 			
-			if ($liveboard->timestamp > $self->storage->current_liveboard($station)->timestamp) {
+			if (	! defined $self->storage->current_liveboard($station)
+				||
+				$liveboard->timestamp > $self->storage->current_liveboard($station)->timestamp) {
 				$self->storage->add_liveboard($liveboard);
 			}
 		}
