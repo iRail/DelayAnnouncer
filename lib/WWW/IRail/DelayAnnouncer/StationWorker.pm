@@ -177,13 +177,11 @@ sub work {
 	# TODO: disconnect the stationworkers access to the database from the current liveboard. Everything through
 	# queries! Maybe control the execution through  a "lastchanged" flag in the database.
 	
-	if ($self->timestamp == $self->harvester_storage->current_liveboard($self->station)->timestamp) {
+	# Check if something has changed
+	unless ($self->harvester_storage->current_liveboard($self->station)->timestamp > $self->timestamp) {
 		return 0;
 	}
 	$self->timestamp($self->harvester_storage->current_liveboard($self->station)->timestamp);
-	if (! defined $self->harvester_storage->current_liveboard($self->station)->departures) {
-		return 0;
-	} # TODO: how to split departures/arrivals?
 	
 	# Check highscores
 	DEBUG "Checking highscores";

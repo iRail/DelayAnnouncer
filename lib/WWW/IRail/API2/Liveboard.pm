@@ -64,7 +64,8 @@ sub _build_departures {
 	
 	my ($departures, $stations, $timestamp) = $self->api->liveboard_departures($self->station);
 	if (defined $departures) {
-		$self->timestamp($timestamp);
+		$self->timestamp($timestamp)
+			if ($timestamp > $self->timestamp);
 		push @{$self->internal_stations}, @{$stations};
 	}
 	
@@ -83,7 +84,8 @@ sub _build_arrivals {
 	
 	my ($arrivals, $stations, $timestamp) = $self->api->liveboard_arrivals($self->station);
 	if (defined $arrivals) {
-		$self->timestamp($timestamp);
+		$self->timestamp($timestamp)
+			if ($timestamp > $self->timestamp);
 		push @{$self->internal_stations}, @{$stations};
 	}
 	

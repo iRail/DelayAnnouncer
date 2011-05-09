@@ -48,7 +48,7 @@ sub init_settings {
 sub publish {
 	my ($self, $message) = @_;
 	
-	INFO "Console publish for station " . $self->stationname) . ": " . $message;
+	INFO "Console publish for station " . $self->stationname . ": " . $message;
 }
 
 42;

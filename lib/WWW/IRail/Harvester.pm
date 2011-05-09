@@ -107,7 +107,7 @@ sub work {
 		
 		my @extra_stations;
 		
-		if (defined $liveboard->arrivals) {
+		if (defined $liveboard->arrivals && defined $liveboard->departures) {
 			foreach my $arrival (@{$liveboard->arrivals}) {
 				unless (grep { $_->id eq $arrival->origin } @{$self->storage->get_stations}) {
 					my ($station) = grep { $_->id eq $arrival->origin } @{$liveboard->internal_stations};
@@ -115,9 +115,7 @@ sub work {
 					push @extra_stations, $station;
 				}
 			}
-		}
-
-		if (defined $liveboard->departures) {
+			
 			foreach my $departure (@{$liveboard->departures}) {
 				unless (grep { $_->id eq $departure->direction } @{$self->storage->get_stations}) {
 					my ($station) = grep { $_->id eq $departure->direction } @{$liveboard->internal_stations};
@@ -125,10 +123,14 @@ sub work {
 					push @extra_stations, $station;
 				}
 			}
+						
+			$self->storage->add_stations(@extra_stations);
+			
+			if ($liveboard->timestamp > $self->storage->current_liveboard($station)->timestamp) {
+				$self->storage->add_liveboard($liveboard);
+			}
 		}
 		
-		$self->storage->add_stations(@extra_stations);
-		$self->storage->add_liveboard($liveboard);
 	}
 }
 
