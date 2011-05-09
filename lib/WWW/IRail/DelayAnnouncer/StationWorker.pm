@@ -181,6 +181,9 @@ sub work {
 		return 0;
 	}
 	$self->timestamp($self->harvester_storage->current_liveboard($self->station)->timestamp);
+	if (! defined $self->harvester_storage->current_liveboard($self->station)->departures) {
+		return 0;
+	} # TODO: how to split departures/arrivals?
 	
 	# Check highscores
 	DEBUG "Checking highscores";
