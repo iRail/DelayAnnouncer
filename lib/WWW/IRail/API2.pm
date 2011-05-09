@@ -65,6 +65,7 @@ sub stations {
 	
 	my $url = $self->base . 'stations.php'
 		.'?format=json';
+	DEBUG "Requestion station list via " . $url;
 	
 	# Fetch response
 	my $response = $self->ua()->get($url);
@@ -108,6 +109,7 @@ sub liveboard_departures {
 	my $url = $self->base . 'liveboard.php'
 		. '?station=' . uri_escape($station)
 		.'&format=json';
+	DEBUG "Requestion liveboard departures via " . $url;
 		
 	# Fetch response
 	my $response = $self->ua()->get($url);
@@ -168,6 +170,7 @@ sub liveboard_arrivals {
 		. '?station=' . uri_escape($station)
 		.'&arrdep=A'
 		.'&format=json';
+	DEBUG "Requestion liveboard arrivals via " . $url;
 		
 	# Fetch response
 	my $response = $self->ua()->get($url);
