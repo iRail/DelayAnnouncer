@@ -83,6 +83,7 @@ sub _build_arrivals {
 	my ($self) = @_;
 	
 	my ($arrivals, $stations, $timestamp) = $self->api->liveboard_arrivals($self->station);
+	# TODO: improve error handling, maybe through die?
 	if (defined $arrivals) {
 		$self->timestamp($timestamp)
 			if ($timestamp > $self->timestamp);

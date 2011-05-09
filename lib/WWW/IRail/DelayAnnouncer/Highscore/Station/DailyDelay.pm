@@ -64,7 +64,7 @@ sub global_message {
 	my ($self, $previous_station, $score) = @_;
 	
 	if (defined $previous_station) {
-		return $self->station
+		return $self->stationname
 			. " just ousted "
 			. $self->storage->get_station_name($previous_station)
 			. " as leader of the daily delay rankings";		

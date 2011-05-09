@@ -82,6 +82,7 @@ sub stations {
 	if ($@) {
 		WARN "Could not decode station data";
 		WARN $@;
+		DEBUG $response->decoded_content;
 		return undef;
 	}
 	
@@ -124,6 +125,7 @@ sub liveboard_departures {
 	if ($@) {
 		WARN "Could not decode liveboard data";
 		WARN $@;
+		DEBUG $response->decoded_content;
 		return undef;
 	}
 	
@@ -183,6 +185,7 @@ sub liveboard_arrivals {
 	if ($@) {
 		WARN "Could not decode liveboard data";
 		WARN $@;
+		DEBUG $response->decoded_content;
 		return undef;
 	}
 	
