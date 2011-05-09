@@ -49,6 +49,19 @@ sub owner {
 	return $self->station;
 }
 
+has 'stationname' => (
+	is		=> 'ro',
+	isa		=> 'Str',
+	lazy		=> 1,
+	builder		=> '_build_stationname'
+);
+
+sub _build_stationname {
+	my ($self) = @_;
+	
+	return $self->storage->get_station_name($self->station);
+}
+
 42;
 
 __END__
