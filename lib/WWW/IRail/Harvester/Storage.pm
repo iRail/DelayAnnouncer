@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS departures (
 	direction varchar(40) NOT NULL,
 	vehicle varchar(20) NOT NULL,
 	delay int(11) DEFAULT NULL,
-	platform int(11) DEFAULT NULL,
+	platform varchar(5) DEFAULT NULL,
 	`time` int(11) NOT NULL,
 	PRIMARY KEY (station,`time`,vehicle),
 	FOREIGN KEY (station) REFERENCES stations(id),

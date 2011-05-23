@@ -44,7 +44,7 @@ has 'vehicle' => (
 
 has 'platform' => (
 	is		=> 'ro',
-	isa		=> 'Maybe[Int]'
+	isa		=> 'Maybe[Str]'
 );
 
 has 'delay' => (
